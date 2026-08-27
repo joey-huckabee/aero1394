@@ -523,7 +523,7 @@ The important part is that we do not prematurely turn guessed BIE fields into a 
 
 ## Proposed repository
 
-I would probably call it:
+A possible future workspace layout is:
 
 ```
 aero1394/
@@ -1019,31 +1019,9 @@ What aircraft parameters do those messages represent?
 ```
 That should be the long-term design.
 
-## One other decision I recommend
+## Rust-only implementation
 
-I would not name every protocol-specific core library after the Aero1394 application.
-
-I'd make the executable:
-```
-aero1394
-```
-but the initial Rust package might eventually become:
-
-```
-bie
-bie-1394
-as5643
-```
-because there is useful functionality here independent of the recorder file.
-
-A future application should be able to do:
-
-```
-use as5643::As5643Message;
-```
-without knowing or caring that the data originally came from a .bie file.
-
-So yes: Rust only, and I think that's actually the better architecture here. We can use Rust for both the forensic/reverse-engineering stage and the eventual high-performance production decoder, while keeping guessed BIE semantics isolated until we've proven them.
+Rust will be used for both the forensic/reverse-engineering stage and the eventual high-performance production decoder, while keeping guessed BIE semantics isolated until they have been proven.
 
 When we get the first BIE sample, I would start with a very small Rust inspect implementation whose only jobs are file statistics, offset-oriented hex inspection, repeating-pattern discovery, candidate length/timestamp detection, and 1394-header scanning. We shouldn't even call something a BieHeader until the evidence supports it.
 
@@ -1053,7 +1031,6 @@ When we get the first BIE sample, I would start with a very small Rust inspect i
 - We need to convert this conversation to detailed ADRs.
 - I need the first version we build in Rust to run on windows but the project should be able to run on Windows and Linux ultimately.  
 - We need this fully documented including the format of the BIE binary and the different data flow pipelines including corner cases which must be checked for.
-- Should I rename this project? It seems like this will be more than a BIE binary file decoder ultimately.
 - I am guessing we will eventually want to consume CH.10 files as well, but that will be much later because I need the BIE binary decoding now.
 - I need to be able to build a Rust CLI as well as a a python package which uses O3 so I can integrate this into my ETL Pipeline.
 - We will be making a tool which I will use immedietely but then we will use components of the libraries in my CH.10 tools.
