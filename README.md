@@ -1,5 +1,8 @@
-# bie-decoder
-1394 BIE Binary Decoder
+# Aero1394
+Aerospace IEEE-1394 and AS5643 capture decoding and analysis
+
+The project name and scope are established in
+[ADR-0001](docs/adr/0001-name-the-project-aero1394.md).
 
 Hey so we created an MIE Decoder tool for 1553. 
 joey-huckabee/mie-decoder We have a second recorder for 1394 which generates bie binary files. Is there anything you can tell me about that if I want to create a similar decoder?
@@ -185,7 +188,7 @@ timing error:        1.283 us
 status:            PASS
 ```
 
-That starts turning bie-decoder into an AS5643 analysis tool, rather than just a binary converter.
+That starts turning Aero1394 into an AS5643 analysis tool, rather than just a binary converter.
 
 ## I would design BIE Decoder as a layered decoder
 
@@ -311,7 +314,7 @@ So the BIE decoder's recovery code may actually become more reliable.
 Something like:
 
 ```
-bie-decoder dump recording.bie --records 3
+aero1394 dump recording.bie --records 3
 ```
 
 could eventually produce:
@@ -360,27 +363,27 @@ That would be enormously useful for reverse engineering and flight-test debuggin
 I'd keep the familiar commands, but add protocol-oriented ones:
 
 ```
-bie-decoder inspect recording.bie
+aero1394 inspect recording.bie
 
-bie-decoder count recording.bie
+aero1394 count recording.bie
 
-bie-decoder dump recording.bie --records 10
+aero1394 dump recording.bie --records 10
 
-bie-decoder decode recording.bie -o messages.csv
+aero1394 decode recording.bie -o messages.csv
 
-bie-decoder validate recording.bie
+aero1394 validate recording.bie
 
-bie-decoder channels recording.bie
+aero1394 channels recording.bie
 
-bie-decoder messages recording.bie
+aero1394 messages recording.bie
 
-bie-decoder timeline recording.bie
+aero1394 timeline recording.bie
 ```
 
 And eventually:
 
 ```
-bie-decoder decode recording.bie \
+aero1394 decode recording.bie \
     --profile aircraft.toml \
     -o signals.csv
 ```
@@ -523,7 +526,7 @@ The important part is that we do not prematurely turn guessed BIE fields into a 
 I would probably call it:
 
 ```
-bie-decoder/
+aero1394/
 ├── Cargo.toml
 ├── Cargo.lock
 ├── README.md
@@ -557,7 +560,7 @@ But I would not necessarily start with all six crates.
 Initially I would keep it simpler:
 
 ```
-bie-decoder/
+aero1394/
 ├── Cargo.toml
 ├── src/
 │   ├── main.rs
@@ -581,17 +584,17 @@ The first version should deliberately be an investigative tool.
 Something like:
 
 ```
-bie-decoder inspect recording.bie
-bie-decoder hexdump recording.bie --offset 0 --length 4096
-bie-decoder scan recording.bie
-bie-decoder records recording.bie --limit 20
-bie-decoder entropy recording.bie
+aero1394 inspect recording.bie
+aero1394 hexdump recording.bie --offset 0 --length 4096
+aero1394 scan recording.bie
+aero1394 records recording.bie --limit 20
+aero1394 entropy recording.bie
 ```
 
 And eventually:
 
 ```
-bie-decoder scan recording.bie --1394
+aero1394 scan recording.bie --1394
 ```
 
 The scanner should be able to say:
@@ -850,13 +853,13 @@ This will be one of the most useful features.
 Normal processing:
 
 ```
-bie-decoder decode file.bie --strict
+aero1394 decode file.bie --strict
 ```
 could stop/reject invalid records.
 
 Forensic mode:
 ```
-bie-decoder inspect file.bie --forensic
+aero1394 inspect file.bie --forensic
 ```
 could say:
 ```
@@ -965,7 +968,7 @@ without changing the decoder.
 This is the bigger picture:
 
 ```
-                        bie-decoder
+                         Aero1394
                              │
                  ┌───────────┴───────────┐
                  │                       │
@@ -1018,11 +1021,11 @@ That should be the long-term design.
 
 ## One other decision I recommend
 
-I would not call the core library bie-decoder internally.
+I would not name every protocol-specific core library after the Aero1394 application.
 
 I'd make the executable:
 ```
-bie-decoder
+aero1394
 ```
 but the initial Rust package might eventually become:
 
@@ -1054,4 +1057,3 @@ When we get the first BIE sample, I would start with a very small Rust inspect i
 - I am guessing we will eventually want to consume CH.10 files as well, but that will be much later because I need the BIE binary decoding now.
 - I need to be able to build a Rust CLI as well as a a python package which uses O3 so I can integrate this into my ETL Pipeline.
 - We will be making a tool which I will use immedietely but then we will use components of the libraries in my CH.10 tools.
-
