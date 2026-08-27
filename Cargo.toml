@@ -1,0 +1,13 @@
+[package]
+name = "aero1394"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.98"
+license = "Apache-2.0"
+description = "Forensic inspection and analysis tools for aerospace IEEE-1394 captures"
+repository = "https://github.com/joey-huckabee/aero1394"
+
+[dependencies]
+
+[lints.rust]
+unsafe_code = "forbid"

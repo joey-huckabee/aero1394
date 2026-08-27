@@ -9,9 +9,10 @@ working hypotheses: no BIE format has been verified in this repository yet.
 
 ## Project status
 
-**Discovery and pre-implementation.** The architecture has been recorded, but
-the decoder has not been scaffolded and no representative BIE capture is
-present in the repository.
+**Stage 1 forensic inspection.** The first Rust library and CLI vertical slice
+is available. It performs bounded, offset-aware hex inspection without
+asserting a BIE record schema. No representative BIE capture is present in the
+repository, so BIE framing and protocol decoding remain unimplemented.
 
 The next milestone is a small Rust forensic CLI that can characterize a sample
 without embedding guessed field meanings in the public API.
@@ -20,6 +21,36 @@ Initial vendor research uncovered a format-provenance mismatch: DAP documents
 native FireSpy recordings as `.fsr`, not `.bie`. See the
 [BIE format research ledger](docs/BIE-FORMAT.md) before making container-format
 assumptions.
+
+## Build and inspect a capture
+
+The project pins Rust 1.98.0. Build and run the first 256 bytes of a capture:
+
+```text
+cargo run --release -- hexdump path/to/capture.bie
+```
+
+Inspect a specific range using decimal or hexadecimal byte counts:
+
+```text
+cargo run --release -- hexdump path/to/capture.bie --offset 0x1000 --length 512
+```
+
+Change the line width or deliberately dump the entire file:
+
+```text
+cargo run --release -- hexdump path/to/capture.bie --width 32
+cargo run --release -- hexdump path/to/capture.bie --length all > capture.hexdump.txt
+```
+
+Each line contains a 16-digit absolute file offset, hexadecimal bytes, and an
+ASCII preview. The default 256-byte limit prevents an accidental terminal dump
+of a large recording. Hex-dump output contains source bytes and must be handled
+with the same sensitivity as the capture.
+
+See [Reverse-engineering BIE captures](docs/REVERSE-ENGINEERING.md) for the
+evidence workflow and [current architecture](docs/ARCHITECTURE.md) for the
+library/CLI boundary.
 
 ## Processing model
 

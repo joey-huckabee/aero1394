@@ -361,6 +361,16 @@ without advance approval and use of its secure upload process ([DAP-SUPPORT];
 - Refuse unsupported versions safely and retain enough context for forensic
   output.
 
+The initial format-neutral Rust command can capture these observations without
+assigning field meanings:
+
+```text
+cargo run --release -- hexdump path/to/capture.bie --offset 0 --length 256
+```
+
+See [Reverse-engineering BIE captures](REVERSE-ENGINEERING.md) for bounded
+range selection, provenance recording, and handling guidance.
+
 If the target files prove to be native FireSpy `.fsr` files with a nonstandard
 extension, update this document with the identifying evidence and decide
 whether the adapter should be named `fsr` rather than encoding the mistaken

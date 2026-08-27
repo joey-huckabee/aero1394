@@ -1,6 +1,6 @@
 # ADR-0004: Start as a modular single crate
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-08-27
 - Deciders: Project maintainers
 
@@ -91,3 +91,12 @@ Accept this proposal when the first Cargo package is scaffolded and the initial
 forensic vertical slice fits without circular module dependencies. Supersede it
 if a concrete packaging, reuse, or platform constraint requires a workspace at
 the outset.
+
+## Implementation evidence
+
+On 2026-08-27, the first implementation established one `aero1394` package with
+a reusable library, a thin CLI binary, and a format-neutral `forensic` module.
+Filesystem positioning and text rendering remain in the binary; bounded byte
+iteration and absolute-offset models live in the library. The package has no
+runtime dependencies or circular module relationships. This satisfies the
+acceptance criteria while leaving future crate extraction available.
