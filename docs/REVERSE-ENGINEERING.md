@@ -1,11 +1,12 @@
 # Reverse-engineering BIE captures
 
 - Status: Stage 1 working method
-- Last updated: 2026-08-27
+- Last updated: 2026-08-28
 
 This procedure turns observations from an unknown capture into reproducible
 evidence without assuming that the extension identifies its contents. The
 format claims and open questions belong in [BIE-FORMAT.md](BIE-FORMAT.md).
+Application-specific layouts belong in [PAYLOADS.md](PAYLOADS.md).
 
 ## Protect and record the source
 
@@ -93,6 +94,12 @@ Do not rename an unknown value after a protocol concept merely because one bit
 pattern is plausible. Compare multiple records and, when possible, a matching
 vendor export. The evidence sequence and confidence terms are defined in
 [ADR-0005](adr/0005-reverse-engineer-bie-with-an-evidence-led-process.md).
+
+When a supplied message is authorized for repository use, preserve the minimum
+sanitized bytes needed for a golden case under `tests/fixtures`. Document byte
+count, source relationship, expected raw values, and whether messages were
+actually consecutive. Do not reconstruct a fictional continuous capture by
+concatenating excerpts from different file offsets.
 
 ## Current command boundary
 

@@ -78,6 +78,9 @@ possible, a known network or vendor export.
 
 ### Stage 5: Profiles and engineering signals
 
+ADR-0012 refines this stage: Aero1394 expresses the versioned payload schema as
+compiled Rust modules behind a registry, not as required runtime YAML profiles.
+
 - Define a versioned, validated network-profile schema.
 - Map messages and payload fields to engineering values without changing the
   generic protocol decoder.
@@ -144,3 +147,11 @@ validation each provide independent operational value.
 Acquire and characterize one representative BIE capture plus a matching vendor
 export if available. Once that input exists, scaffold the Stage 1 Rust vertical
 slice rather than guessing a record API in advance.
+
+## Implementation update: 2026-08-28
+
+The Stage 1 hexdump slice is implemented. Supplied simulation excerpts and
+summary metadata now provide sufficient evidence to begin the Stage 2 framing
+parser for the observed variant. The next slice is the length-delimited BIE
+record boundary and zero-word termination behavior documented in
+`docs/BIE-FORMAT.md`, verified against `tests/fixtures/bie`.

@@ -1,7 +1,7 @@
 # Architecture decision records
 
-This directory contains the durable decisions extracted from the initial
-project-planning conversation. ADRs explain why the project is shaped a
+This directory contains the project's durable architecture decisions. ADRs
+explain why the project is shaped a
 particular way; they do not replace the eventual binary-format specification,
 protocol notes, user guide, or API reference.
 
@@ -28,6 +28,8 @@ protocol notes, user guide, or API reference.
 | [0009](0009-treat-documentation-and-test-evidence-as-deliverables.md) | Accepted | Treat documentation and test evidence as deliverables |
 | [0010](0010-defer-chapter-10-to-a-future-input-adapter.md) | Accepted | Defer Chapter 10 to a future input adapter |
 | [0011](0011-deliver-capabilities-in-evidence-gated-stages.md) | Accepted | Deliver capabilities in evidence-gated stages |
+| [0012](0012-use-built-in-rust-payload-definitions.md) | Accepted | Use built-in Rust payload definitions |
+| [0013](0013-separate-canonical-data-from-output-presentation.md) | Proposed | Separate canonical data from output presentation |
 
 ## Recording new decisions
 

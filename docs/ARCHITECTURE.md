@@ -1,7 +1,7 @@
 # Aero1394 architecture
 
-- Status: Stage 1 implementation
-- Last updated: 2026-08-27
+- Status: Stage 1 implementation; Stage 2 framing evidence available
+- Last updated: 2026-08-28
 
 ## Current vertical slice
 
@@ -54,8 +54,13 @@ Modules are added only with evidence-backed behavior. The expected dependency
 direction is:
 
 ```text
-forensic / input adapter -> bie -> ieee1394 -> as5643 -> profile -> analysis
+forensic / input adapter -> bie -> ieee1394 -> as5643 -> payload -> analysis
 ```
+
+The `payload` module is the Rust-native implementation of the profile knowledge
+described by ADR-0002. Definitions are compiled into the tool and selected by
+an explicit registry as decided in ADR-0012; external YAML profiles are not a
+runtime requirement.
 
 An outer container may produce raw captured bytes without successfully
 decoding the next layer. Each layer must preserve the bytes and source offsets
@@ -65,6 +70,17 @@ input adapter rather than a dependency of BIE decoding.
 A module should become a separate crate only when the extraction conditions in
 ADR-0004 are met. Current public types are deliberately small so the package
 layout does not prematurely stabilize an unknown BIE model.
+
+## Evidence available for the next slice
+
+The supplied BIE excerpts establish one 16-byte big-endian, length-delimited
+record header and a strong zero-word EOF inference. The parser should implement
+only that generic header and length boundary first, preserving each stored
+region as raw bytes.
+
+Protocol-envelope interpretation and the future typed payload registry remain
+downstream operations. The complete evidence map is in `BIE-FORMAT.md`; payload
+knowledge is in `PAYLOADS.md`; testable commitments are in `REQUIREMENTS.md`.
 
 ## Verification
 

@@ -28,6 +28,9 @@ The documentation set will grow as evidence becomes available:
 | Document | Purpose |
 | --- | --- |
 | `docs/BIE-FORMAT.md` | Evidence ledger and normative description of verified BIE framing |
+| `docs/PAYLOADS.md` | Built-in application-payload definitions, provenance, and open fields |
+| `docs/REQUIREMENTS.md` | Testable product behavior and traceability to decisions, evidence, and tests |
+| `docs/OUTPUTS.md` | Versioned CSV, Parquet, time-format, and adapter schema contracts |
 | `docs/ARCHITECTURE.md` | Layer boundaries, data ownership, dependency direction, and data-flow pipelines |
 | `docs/REVERSE-ENGINEERING.md` | Reproducible forensic methods, tools, capture provenance, and open questions |
 | `docs/IEEE1394.md` | Implemented packet subset, byte/bit numbering, CRC coverage, and unsupported cases |

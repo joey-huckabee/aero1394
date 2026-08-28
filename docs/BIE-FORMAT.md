@@ -1,7 +1,7 @@
 # BIE binary format research
 
-- Status: Discovery; no authoritative BIE layout or sample has been obtained
-- Last updated: 2026-08-27
+- Status: Discovery; representative simulation excerpts have been correlated with recorder summary metadata
+- Last updated: 2026-08-28
 - Applies to: the `.bie` aerospace IEEE-1394 recordings expected by Aero1394
 
 ## Purpose
@@ -10,8 +10,9 @@ This document is the evidence ledger for the BIE capture container. It records
 what is known, what has only been inferred, what has been ruled out, and what
 must be learned before implementing a production parser.
 
-It is intentionally not yet a byte-level specification. Publishing guessed
-offsets as a format would be more harmful than leaving them unknown.
+The verified subset is described at byte level below. Protocol names remain
+provisional where the observed layout has not yet been checked against an
+authoritative BIE or AS5643 definition.
 
 Evidence labels used below are:
 
@@ -34,16 +35,50 @@ extensions `.fsp`, `.bin`, `.rgn`, `.txt`, `.csv`, `.hex`, and `.qdl`. Its file
 format chapter defines `.fsp` and `.rgn` binary layouts, but not the native
 `.fsr` layout and not `.bie` ([DAP-OM]).
 
-This creates a provenance conflict that must be resolved before Aero1394 names
-or implements a BIE record structure:
+This leaves a provenance conflict even though a repeatable record structure is
+now visible in the supplied simulation excerpts:
 
 | Claim | Status | Evidence and implication |
 | --- | --- | --- |
-| The target files use the `.bie` extension | Reported, not independently observed | No sample or filename is in this repository |
+| The target files use the `.bie` extension | Confirmed by supplied summary metadata | The complete capture is not committed; sanitized hex fixtures preserve selected records |
+| The target files were produced by `BIE_LINUX` hardware/software | Confirmed by supplied summary metadata | This does not establish that BIE is a FireSpy-native format |
 | The target files were produced by FireSpy | Hypothesis | DAP documentation uses `.fsr` for FireSpy recordings |
 | `.bie` is a legacy or internal DAP format | Unknown | No public DAP reference was found |
 | `.bie` is a renamed `.fsr`, `.rgn`, `.fsp`, or Chapter 10 file | Hypothesis | Must be tested by signature and contents, never by extension alone |
-| `.bie` contains IEEE-1394 or AS5643 traffic | Hypothesis | The intended acquisition system makes this plausible, but no bytes have been inspected |
+| `.bie` contains an AS5643-derived stored region | Inferred | Length geometry, STOF-like trailer values, and VPC behavior agree across supplied records |
+
+## Supplied capture evidence
+
+The current byte map comes from excerpts of one simulation recording and its
+corrected summary metadata. The relevant summary values are:
+
+```text
+Data File: Startup.draw.data.1394.vs_bus_b3.unused.bie
+Data Type: IEEE 1394
+Data Code: vs_bus_b3
+Hardware Type: BIE_LINUX
+Recorder Buffer Mode: Direct to File (local disk)
+Data Set Count: 1
+Recording Timetags:
+  start=31:08:01:59.063844
+  stop=31:08:05:46.335672
+```
+
+The summary reports a recording date of Wednesday, July 31, 2024. The complete
+capture is not in the repository, so its digest, recorder version, and handling
+classification remain unknown. The supplied end-of-file offsets imply this
+geometry:
+
+```text
+877 records * 132 bytes = 115,764 bytes
+zero word at EOF         =       4 bytes
+total                    = 115,768 bytes (0x1C438)
+```
+
+Selected sanitized records are retained as machine-readable hexadecimal test
+inputs under [`tests/fixtures/bie`](../tests/fixtures/bie/README.md). They are
+evidence for the observed record family, not permission to generalize every
+`.bie` producer or record type.
 
 The negative search result does not prove that no BIE specification exists.
 It may be available only in a serial-number-gated download, SDK, support
@@ -271,30 +306,94 @@ target files.
 
 ## Current BIE byte map
 
-No byte range has been confirmed.
+### File and record grammar
 
-| Region or field | Status | Required evidence |
-| --- | --- | --- |
-| File signature/magic | Unknown | Original header bytes from multiple files |
-| Container version | Unknown | Header correlation or vendor documentation |
-| Byte order | Unknown | Known-value correlation across records |
-| File-level metadata | Unknown | Recorder/software properties and decoded export |
-| Index or directory | Unknown | File-wide offset analysis and truncation tests |
-| Record boundary and length | Unknown | Repeating structures across a sample |
-| Record type | Unknown | Correlation with packet/event export |
-| Capture timestamp | Unknown | Same-event time in vendor output |
-| Timestamp epoch/resolution/wrap | Unknown | Controlled timing and long capture |
-| Bus/node/channel source | Unknown | Multi-bus capture and vendor output |
-| Flags and error status | Unknown | Known good/error/prefix-only cases |
-| Embedded IEEE-1394 bytes | Unknown | Header/length/CRC validation |
-| Compression or encoding | Unknown | Entropy, signatures, and decoded comparison |
-| Record/file checksum | Unknown | Mutation and multi-record comparison |
-| Alignment and padding | Unknown | Candidate-boundary chaining |
-| End-of-file/trailer behavior | Unknown | Complete and deliberately truncated copies |
+The observed file is a sequence of big-endian, length-delimited records ending
+in a zero word. The zero word is a **strong inference** for an EOF sentinel: it
+occurs exactly where another nonzero data-item ID would begin, but confirmation
+from another complete file or producer documentation is still required.
 
-## Evidence required from the first sample
+```text
+file := record* zero_word
 
-Preserve the original file and record:
+record :=
+    data_item_id       u32be
+    recorder_seconds   u32be
+    recorder_useconds  u32be
+    status_and_length  u32be
+    stored_data        u8[data_length]
+
+zero_word   := 00 00 00 00
+data_length := status_and_length & 0x0000_FFFF
+record_size := 16 + data_length
+```
+
+The decoder must not make 132 bytes a universal record size. That size follows
+only for the supplied record family because its stored-data length is `0x0074`,
+or 116 bytes.
+
+### Observed record header
+
+| Offset | Width | Interpretation | Evidence |
+| ---: | ---: | --- | --- |
+| `0x00` | 4 | Nonzero data-item ID | **Confirmed** by exact match with summary metadata |
+| `0x04` | 4 | Unsigned Unix seconds, big-endian | **Confirmed** by recording date and time correlation |
+| `0x08` | 4 | Microseconds within the second, big-endian | **Confirmed** by time correlation and 12.5 ms deltas |
+| `0x0C` | 4 | Raw status/length word | **Confirmed** structurally; upper-bit semantics unknown |
+| `0x10` | N | Stored data, where `N` is the low 16-bit length | **Confirmed** for supplied records |
+
+The observed status/length words are `0x00000074` and `0x40000074`.
+`0x0074` consistently selects 116 following bytes and chains to the next
+record. The meaning of `0x40000000` is unknown. Its similarity to an IRIG 106
+IEEE-1394 Format 1 status/length word remains a comparison lead, not proof that
+the BIE record is a Chapter 10 intra-packet.
+
+The first supplied record contains:
+
+```text
+66 AA 36 9B 00 0B 2F C9
+```
+
+This decodes to Unix second `1722431131` plus `733129` microseconds, or
+`2024-07-31T13:05:31.733129Z`. In America/Chicago on that date it is
+`08:05:31.733129`, inside the independently reported recording window. The
+final supplied record decodes to `2024-07-31T13:05:46.333129Z`, about 2.543 ms
+before the reported stop time.
+
+The raw seconds value must be modeled as `u32` and widened before arithmetic.
+If it is an unsigned Unix counter, it wraps after
+`2106-02-07T06:28:15Z`; interpreting it as signed would instead introduce the
+unwanted 2038 limit. Raw seconds and microseconds remain part of the decoded
+model even when a calendar representation is available.
+
+### Stored-data boundary
+
+At the BIE layer, the declared stored-data region is opaque. Its internal
+protocol envelope, application identity, field layout, integrity behavior, and
+message-specific timing do not belong to the container format. The BIE parser
+must preserve the exact bytes and length without importing a built-in payload
+definition.
+
+The currently observed downstream-protocol evidence is kept in
+[`AS5643.md`](AS5643.md), and application definitions are kept in
+[`PAYLOADS.md`](PAYLOADS.md). Both are isolated from the generic BIE grammar.
+
+### Remaining unknowns
+
+- whether the zero word is required by every producer and whether bytes may
+  legally follow it;
+- whether `data_length` always occupies the low 16 bits and what every upper
+  status bit means;
+- other data-item sizes, IDs, record kinds, and empty-recording behavior;
+- recorder/version metadata, bus/node/channel provenance, and file indexing;
+- which downstream protocol or application definition applies to stored data;
+- behavior for corrupt, prefix-only, acknowledge-only, reset, or event records;
+  and
+- whether the format varies across `BIE_LINUX` versions or hardware.
+
+## Additional capture evidence required
+
+For the next complete sample, preserve the original file and record:
 
 - original filename and extension;
 - producing application, recorder model, firmware, and software version;
@@ -347,12 +446,15 @@ DAP lists support contacts and warns customers not to send CUI or ITAR data
 without advance approval and use of its secure upload process ([DAP-SUPPORT];
 [DAP-CONTACT]). Do not attach a real capture to an ordinary support email.
 
-## Parser constraints until provenance is resolved
+## Parser constraints while provenance and variants remain unresolved
 
 - Do not identify a format solely from `.bie` or any other extension.
 - Do not use `.fsr`, `.fsp`, or `.rgn` structures as BIE structures without a
   signature match and independent correlation.
-- Do not expose guessed BIE field names in the stable Rust or Python API.
+- Implement only the verified record subset and keep provisional protocol
+  fields under neutral names.
+- Do not expose guessed BIE or AS5643 semantics in the stable Rust or Python
+  API.
 - Preserve raw bytes, absolute offsets, and the evidence for each detected
   structure.
 - Report ambiguous matches rather than selecting the first plausible format.
@@ -377,6 +479,20 @@ whether the adapter should be named `fsr` rather than encoding the mistaken
 name in the API.
 
 ## Research log
+
+### 2026-08-28
+
+- Correlated supplied simulation-record excerpts with corrected summary
+  metadata for `vs_bus_b3`.
+- Established the 16-byte big-endian record header and 116-byte stored-data
+  boundary for the observed record family.
+- Correlated recorder seconds/microseconds with the July 31, 2024 local
+  recording window.
+- Recorded the exact 877-record-plus-zero-word file geometry and retained
+  sanitized startup and populated records as test fixtures.
+- Separated IEEE-1394 comparison constraints, AS5643-derived evidence, and
+  application definitions into `docs/IEEE1394.md`, `docs/AS5643.md`, and
+  `docs/PAYLOADS.md` respectively.
 
 ### 2026-08-27
 

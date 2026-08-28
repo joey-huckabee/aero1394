@@ -3,21 +3,24 @@
 Aero1394 is a Rust-first toolkit for decoding and analyzing aerospace
 IEEE-1394 traffic, with SAE AS5643 support as the primary protocol target.
 
-The immediate goal is to decode `.bie` recordings believed to come from a DAP
-Technologies FireSpy recorder. That provenance and the binary layout are still
-working hypotheses: no BIE format has been verified in this repository yet.
+The immediate goal is to decode `.bie` recordings produced by a `BIE_LINUX`
+simulation recorder and believed to be related to DAP Technologies/FireSpy
+workflows. Sanitized record excerpts now support one evidence-backed BIE record
+family, while the exact vendor provenance and other format variants remain
+unresolved.
 
 ## Project status
 
-**Stage 1 forensic inspection.** The first Rust library and CLI vertical slice
-is available. It performs bounded, offset-aware hex inspection without
-asserting a BIE record schema. No representative BIE capture is present in the
-repository, so BIE framing and protocol decoding remain unimplemented.
+**Stage 1 forensic inspection implemented; Stage 2 framing evidence available.**
+The Rust library and CLI perform bounded, offset-aware hex inspection. Supplied
+simulation excerpts and recorder summary metadata establish a 16-byte
+big-endian header and length-delimited stored data for the observed record
+family. BIE parsing and protocol decoding remain unimplemented.
 
-The next milestone is a small Rust forensic CLI that can characterize a sample
-without embedding guessed field meanings in the public API.
+The next milestone is a safe, slice-oriented BIE framing parser exercised by
+the sanitized golden messages under `tests/fixtures/bie`.
 
-Initial vendor research uncovered a format-provenance mismatch: DAP documents
+Vendor research uncovered a format-provenance mismatch: DAP documents
 native FireSpy recordings as `.fsr`, not `.bie`. See the
 [BIE format research ledger](docs/BIE-FORMAT.md) before making container-format
 assumptions.
@@ -56,7 +59,7 @@ library/CLI boundary.
 
 ```text
 BIE capture ---------+
-                     +--> IEEE-1394 --> AS5643 --> network profile --> analysis
+                     +--> IEEE-1394 --> AS5643 --> built-in payload --> analysis
 Chapter 10 capture --+                                            --> signals
 ```
 
@@ -72,21 +75,26 @@ separate layers.
 - a Python package backed by the same Rust core through PyO3 for ETL use;
 - an evidence-backed BIE format specification;
 - IEEE-1394 and AS5643 decoding and validation;
-- later profile, signal, timing, health, and anomaly analysis.
+- later built-in payload, signal, timing, health, and anomaly analysis.
 
-## Input needed for the first milestone
+## Input needed for the next milestones
 
-The most useful starting artifacts are:
+The most useful next artifacts are:
 
-1. a representative `.bie` capture, even if it is only a few megabytes;
+1. another complete `.bie` capture with a different data-item size or ID;
 2. an export of the same interval from the recorder software, if available;
 3. recorder hardware and software version information; and
-4. any non-sensitive network profile or ICD material needed to interpret the
-   payload after the generic protocols are decoded.
+4. the remaining authorized application-payload structures and field metadata.
 
 Capture data must not be committed until its provenance, sensitivity, and
 redistribution terms are understood. Small synthetic or sanitized fixtures can
 then be derived for automated tests.
+
+See the [requirements baseline](docs/REQUIREMENTS.md) for testable behavior and
+[built-in payload definitions](docs/PAYLOADS.md) for the Rust-native extension
+model and current application-definition evidence. The
+[provisional output schemas](docs/OUTPUTS.md) preserve the CSV, Parquet, and time
+presentation direction without making it part of BIE parsing.
 
 ## Architecture decisions
 
