@@ -46,6 +46,7 @@ fn assert_observed_vpc_residual(bytes: &[u8], base: usize) {
     assert_eq!(calculated_vpc ^ stored_vpc, 0x0000_5D60);
 }
 
+/// Requirements: L3-TST-001
 #[test]
 fn empty_recording_is_one_zero_word() {
     let bytes = fixture_bytes(include_str!("fixtures/bie/empty-recording.hex"));
@@ -53,6 +54,7 @@ fn empty_recording_is_one_zero_word() {
     assert_eq!(bytes, [0, 0, 0, 0]);
 }
 
+/// Requirements: L3-TST-001, L3-PRO-005
 #[test]
 fn startup_fixture_preserves_four_consecutive_records() {
     let bytes = fixture_bytes(include_str!("fixtures/bie/startup-four-records.hex"));
@@ -79,6 +81,7 @@ fn startup_fixture_preserves_four_consecutive_records() {
     }
 }
 
+/// Requirements: L3-TST-001, L3-PRO-005
 #[test]
 fn end_fixture_preserves_four_records_and_original_terminator() {
     let bytes = fixture_bytes(include_str!("fixtures/bie/end-four-records.hex"));

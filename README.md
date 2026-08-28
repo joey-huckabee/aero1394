@@ -90,11 +90,14 @@ Capture data must not be committed until its provenance, sensitivity, and
 redistribution terms are understood. Small synthetic or sanitized fixtures can
 then be derived for automated tests.
 
-See the [requirements baseline](docs/REQUIREMENTS.md) for testable behavior and
-[built-in payload definitions](docs/PAYLOADS.md) for the Rust-native extension
-model and current application-definition evidence. The
-[provisional output schemas](docs/OUTPUTS.md) preserve the CSV, Parquet, and time
-presentation direction without making it part of BIE parsing.
+See the [L1 product requirements](docs/L1.md),
+[L2 architectural requirements](docs/L2.md),
+[L3 implementation requirements](docs/L3.md), and generated
+[trace matrix](docs/TRACE-MATRIX.md) for testable behavior and live
+traceability. [Built-in payload definitions](docs/PAYLOADS.md) describe the
+Rust-native extension model and current application-definition evidence. The
+[provisional output schemas](docs/OUTPUTS.md) preserve the CSV, Parquet, and
+time presentation direction without making it part of BIE parsing.
 
 ## Architecture decisions
 

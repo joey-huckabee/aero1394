@@ -69,7 +69,8 @@ For each additional structure:
    `tests/fixtures/payload/<payload_name>/`;
 6. test exact size, boundary values, invalid/truncated input, and byte order;
 7. test raw and engineering representations separately; and
-8. link the implementation and tests from `docs/REQUIREMENTS.md`.
+8. add the applicable `docs/L3.md` requirement and Rust test markers, then
+   regenerate `docs/TRACE-MATRIX.md`.
 
 Adding a definition requires a normal rebuild. A future generator may emit the
 same Rust modules from an authorized ICD, but runtime YAML loading is outside

@@ -80,7 +80,8 @@ region as raw bytes.
 
 Protocol-envelope interpretation and the future typed payload registry remain
 downstream operations. The complete evidence map is in `BIE-FORMAT.md`; payload
-knowledge is in `PAYLOADS.md`; testable commitments are in `REQUIREMENTS.md`.
+knowledge is in `PAYLOADS.md`; testable commitments are decomposed through
+`L1.md`, `L2.md`, and `L3.md`, with live status in `TRACE-MATRIX.md`.
 
 ## Verification
 

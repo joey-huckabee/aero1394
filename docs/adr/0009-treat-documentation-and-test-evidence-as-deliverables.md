@@ -29,7 +29,8 @@ The documentation set will grow as evidence becomes available:
 | --- | --- |
 | `docs/BIE-FORMAT.md` | Evidence ledger and normative description of verified BIE framing |
 | `docs/PAYLOADS.md` | Built-in application-payload definitions, provenance, and open fields |
-| `docs/REQUIREMENTS.md` | Testable product behavior and traceability to decisions, evidence, and tests |
+| `docs/L1.md`, `docs/L2.md`, `docs/L3.md` | Product, architecture, and implementation requirements with explicit parent links |
+| `docs/TRACE-MATRIX.md` | Generated traceability from requirements to verification artifacts and status |
 | `docs/OUTPUTS.md` | Versioned CSV, Parquet, time-format, and adapter schema contracts |
 | `docs/ARCHITECTURE.md` | Layer boundaries, data ownership, dependency direction, and data-flow pipelines |
 | `docs/REVERSE-ENGINEERING.md` | Reproducible forensic methods, tools, capture provenance, and open questions |

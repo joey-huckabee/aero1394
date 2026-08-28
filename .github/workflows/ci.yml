@@ -17,6 +17,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Show active toolchain
         run: rustup show active-toolchain
+      - name: Check requirements trace matrix
+        run: python scripts/build-trace-matrix.py --check
       - name: Check formatting
         run: cargo fmt --all --check
       - name: Lint

@@ -87,7 +87,8 @@ A contributor adds support through one repeatable workflow:
    `tests/fixtures/payload/<name>/`;
 5. test exact-size matching, every field boundary, byte order, unknown and
    ambiguous selection, and any engineering conversion; and
-6. update the requirements traceability table.
+6. add or update the applicable L3 requirement and test markers, then
+   regenerate `docs/TRACE-MATRIX.md`.
 
 The module is available after the normal Aero1394 build. No deployed YAML file
 or user-managed profile directory is required.
