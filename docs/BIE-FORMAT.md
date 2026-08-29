@@ -211,6 +211,14 @@ message-specific timing do not belong to the container format. The BIE parser
 must preserve the exact bytes and length without importing a built-in payload
 definition.
 
+The supplied BIE stored-data region does not contain all information normally
+expected in a complete IEEE-1394 wire packet. No complete link header, header
+CRC, or data CRC has been identified around the application bytes. BIE may
+retain a partial or normalized representation, but the current format evidence
+does not establish which wire information was removed or transformed. The
+higher-level evidence needed to define an IEEE-1394 wire decoder is tracked in
+[`IEEE1394.md`](IEEE1394.md).
+
 The currently observed downstream-protocol evidence is kept in
 [`AS5643.md`](AS5643.md), and application definitions are kept in
 [`PAYLOADS.md`](PAYLOADS.md). Both are isolated from the generic BIE grammar.
