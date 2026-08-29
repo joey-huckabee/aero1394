@@ -9,14 +9,18 @@ record family and its implementation contract.
 
 ## Project status
 
-**Stage 1 forensic inspection implemented; Stage 2 framing evidence available.**
+**Stage 1 forensic inspection implemented; Stage 2 framing underway.**
 The Rust library and CLI perform bounded, offset-aware hex inspection. Supplied
 simulation excerpts and recorder summary metadata establish a 16-byte
 big-endian header and length-delimited stored data for the observed record
-family. BIE parsing and protocol decoding remain unimplemented.
+family. The library now safely parses one complete non-terminator BIE record
+while preserving its raw values, absolute offset, and exact stored data.
+Whole-file chaining, sentinel/trailing-data handling, and protocol decoding
+remain unimplemented.
 
-The next milestone is a safe, slice-oriented BIE framing parser exercised by
-the sanitized golden messages under `tests/fixtures/bie`.
+The next increment is whole-file BIE record chaining and zero-word sentinel
+handling, exercised by the sanitized golden messages under
+`tests/fixtures/bie`.
 
 See the [internal BIE format contract](docs/BIE-FORMAT.md) for the supported
 grammar, explicit field status, and unresolved status flag. Capture provenance

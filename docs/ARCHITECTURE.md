@@ -1,7 +1,7 @@
 # Aero1394 architecture
 
-- Status: Stage 1 implementation; Stage 2 framing evidence available
-- Last updated: 2026-08-28
+- Status: Stage 1 implemented; first Stage 2 record-parsing slice implemented
+- Last updated: 2026-08-29
 
 ## Current vertical slice
 
@@ -17,6 +17,8 @@ Library: forensic::Hexdump -> HexdumpLine { absolute offset, raw bytes }
                               |
                               v
                          std::io::Read
+
+Library: &[u8] + FileOffset -> bie::parse_record -> borrowed BieRecord
 ```
 
 The `forensic` module is format-neutral. It does not identify a source as BIE,
@@ -36,6 +38,13 @@ seeking, writing terminal output, and choosing process exit codes are adapter
 concerns. The library can therefore be reused with memory buffers, extracted
 Chapter 10 payloads, or another storage adapter without invoking a process.
 
+The `bie` module implements the first framing increment. It parses one complete
+non-terminator record from a byte slice, derives the body boundary from the
+encoded low-16-bit length, preserves unknown IDs and unresolved flags, and
+returns the encoded byte count for a future file-level iterator. It does not
+yet chain records or classify the zero-word sentinel, missing terminator, or
+trailing bytes.
+
 ## Dependency direction
 
 The binary depends on the library. The library never depends on the binary,
@@ -43,10 +52,11 @@ terminal formatting, filesystem paths, or operating-system-specific behavior.
 The package currently has no third-party runtime dependencies and forbids
 unsafe code.
 
-Future BIE and protocol parsers will operate on byte slices, following
-[ADR-0006](adr/0006-use-safe-slice-oriented-parsers-and-explicit-wire-types.md).
-The streaming forensic reader will supply those slices but will not absorb
-their parsing, validation, policy, or recovery responsibilities.
+The BIE record parser operates on byte slices, following
+[ADR-0006](adr/0006-use-safe-slice-oriented-parsers-and-explicit-wire-types.md),
+and later protocol parsers will follow the same boundary. The streaming
+forensic reader can supply those slices but will not absorb their parsing,
+validation, policy, or recovery responsibilities.
 
 ## Protocol and format hierarchy
 

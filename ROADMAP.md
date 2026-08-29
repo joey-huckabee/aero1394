@@ -1,7 +1,7 @@
 # Aero1394 roadmap
 
 - Scope: incomplete and forward-looking work only
-- Last updated: 2026-08-28
+- Last updated: 2026-08-29
 
 ## Roadmap rules
 
@@ -15,17 +15,18 @@ before implementation begins.
 
 ## Complete the internal BIE path
 
-### Implement the BIE framing adapter
+### Finish the BIE framing adapter
 
-Implement the parser contract in [`docs/BIE-FORMAT.md`](docs/BIE-FORMAT.md):
+The first record-level slice now parses explicit big-endian header fields,
+uses checked length arithmetic, retains raw fields and absolute offsets, and
+accepts unknown IDs and variable body lengths. Complete the remaining
+file-level contract in [`docs/BIE-FORMAT.md`](docs/BIE-FORMAT.md):
 
-- big-endian header fields;
-- checked length arithmetic;
+- chain consecutive variable-length records;
 - zero-word termination;
 - precise truncation and trailing-data diagnostics;
-- raw status/flag preservation;
-- unknown data-item support; and
-- absolute offsets and raw stored-data retention.
+- distinguish a missing terminator from a truncated record; and
+- define the strict file result without adding recovery policy to framing.
 
 Exit gate: the active BIE and fixture requirements in `docs/L3.md` have Rust
 test markers and the supplied BIE fixtures pass as golden cases.

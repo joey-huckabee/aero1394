@@ -1,3 +1,6 @@
+use aero1394::bie::{DataItemId, parse_record};
+use aero1394::forensic::FileOffset;
+
 fn fixture_bytes(text: &str) -> Vec<u8> {
     text.split_whitespace()
         .map(|token| {
@@ -61,7 +64,8 @@ fn empty_recording_is_one_zero_word() {
     assert_eq!(bytes, [0, 0, 0, 0]);
 }
 
-/// Requirements: L3-TST-001, L3-PRO-005
+/// Requirements: L3-TST-001, L3-PRO-005, L3-BIE-001, L3-BIE-002, L3-BIE-003,
+/// Requirements: L3-BIE-006, L3-BIE-007
 #[test]
 fn startup_fixture_preserves_four_consecutive_records() {
     let bytes = fixture_bytes(include_str!("fixtures/bie/startup-four-records.hex"));
@@ -78,6 +82,27 @@ fn startup_fixture_preserves_four_consecutive_records() {
     assert_eq!(bytes.len(), 528);
     for record_index in 0..4 {
         let base = record_index * 132;
+        let (record, consumed) = parse_record(
+            &bytes[base..],
+            FileOffset::new(u64::try_from(base).expect("fixture offset fits u64")),
+        )
+        .expect("known-good BIE record parses");
+
+        assert_eq!(consumed, 132);
+        assert_eq!(record.file_offset().get(), base as u64);
+        assert_eq!(record.data_item_id(), DataItemId::new(0x0000_5D04));
+        assert_eq!(record.recorder_time().seconds(), 0x66AA_369B);
+        assert_eq!(
+            record.recorder_time().microseconds(),
+            microseconds[record_index]
+        );
+        assert_eq!(
+            record.status_and_length().raw(),
+            status_lengths[record_index]
+        );
+        assert_eq!(record.status_and_length().data_length(), 116);
+        assert_eq!(record.stored_data(), &bytes[base + 16..base + 132]);
+
         assert_common_record(&bytes, base);
         assert_assumed_as5643_vpc_valid(&bytes, base);
         assert_eq!(be_u32(&bytes, base + 4), 0x66AA_369B);
