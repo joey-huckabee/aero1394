@@ -207,9 +207,11 @@ forced into the BIE model.
 
 At the BIE layer, the declared stored-data region is opaque. Its internal
 protocol envelope, application identity, field layout, integrity behavior, and
-message-specific timing do not belong to the container format. The BIE parser
-must preserve the exact bytes and length without importing a built-in payload
-definition.
+message-specific timing are not part of the generic container grammar. The BIE
+parser must preserve the exact bytes and length without importing a protocol or
+built-in payload decoder. This evidence ledger may still record observations
+about how a particular BIE record family stores those bytes, provided those
+observations remain separate from the generic parser contract.
 
 The supplied BIE stored-data region does not contain all information normally
 expected in a complete IEEE-1394 wire packet. No complete link header, header
@@ -219,14 +221,110 @@ does not establish which wire information was removed or transformed. The
 higher-level evidence needed to define an IEEE-1394 wire decoder is tracked in
 [`IEEE1394.md`](IEEE1394.md).
 
-The currently observed downstream-protocol evidence is kept in
+The normative AS5643 protocol boundary is tracked independently in
 [`AS5643.md`](AS5643.md), and application definitions are kept in
-[`PAYLOADS.md`](PAYLOADS.md). Both are isolated from the generic BIE grammar.
+[`PAYLOADS.md`](PAYLOADS.md). The BIE-specific observations below do not define
+either standard.
 
 The BIE container does not encode the configured sample-attempt rate or define
 a scheduling relationship among acquisition, AS5643 frames, and payload
 production. Those values belong to capture provenance and the appropriate
 downstream layer.
+
+## Observed stored-data layout for the supplied record family
+
+For records with data-item ID `0x00005D04`, the stored-data region is 116
+bytes. The following split is reproducible across the supplied BIE fixtures.
+Offsets are relative to the beginning of `stored_data`, not the BIE record.
+Protocol names in the table are candidates derived by comparison with AS5643;
+they are not confirmed AS5643 fields.
+
+| Stored-data offset | Width | BIE interpretation | Evidence |
+| ---: | ---: | --- | --- |
+| `0x00` | 4 | Neutral protocol word 0; health-status position candidate | Inferred; observed value is zero |
+| `0x04` | 4 | Neutral protocol word 1; heartbeat position candidate | Position inferred; behavior contradicts the expected `+1` sequence |
+| `0x08` | 92 | Application bytes for data-item ID `0x00005D04` | **Confirmed** by independent summary size and field alignment |
+| `0x64` | 4 | STOF transmit-offset candidate, observed `1400` | Strong inference |
+| `0x68` | 4 | STOF receive-offset candidate, observed `500` | Strong inference |
+| `0x6C` | 4 | STOF datapump-offset candidate, observed `500` | Strong inference |
+| `0x70` | 4 | VPC candidate | Strong inference from repeated XOR/complement behavior |
+
+The byte accounting is exact for this record family:
+
+```text
+neutral protocol words    8
+application payload      92
+three STOF candidates    12
+VPC candidate             4
+                         ---
+stored data             116 (0x74)
+```
+
+This layout is an observed BIE representation, not a universal BIE record
+shape or a normative AS5643 message grammar. The generic BIE parser returns all
+116 bytes as opaque stored data. A later, explicitly selected interpretation
+may expose the split while preserving every raw word.
+
+### Heartbeat discrepancy
+
+AS5643 places Health Status and Heartbeat ahead of message data, which makes
+the first two stored words plausible positional candidates. The second word
+does not exhibit the expected simple heartbeat increment. Near the end of the
+supplied recording it changes as follows:
+
+```text
+049CBDEE
+049CBF8E   delta 416
+049CC149   delta 443
+049CC304   delta 443
+```
+
+The stable BIE-facing model must therefore retain neutral names such as
+`protocol_word_0` and `protocol_word_1`. Plausible explanations include a BIE
+transformation, producer behavior that differs from the expected sequence, a
+different meaning for the supplied size, or another normalization layer. None
+is currently established.
+
+### VPC evidence and missing-header hypothesis
+
+For every complete supplied record checked, complementing the XOR of all
+visible words from protocol word 0 through the third STOF candidate produces a
+value whose XOR difference from the stored VPC candidate is constant:
+
+```text
+visible calculation XOR stored VPC = 0x00005D60
+```
+
+For this message, that residual also equals:
+
+```text
+data_item_id                 0x00005D04
+XOR protected payload size  0x00000064  (92 + 8)
+                             ----------
+                             0x00005D60
+```
+
+This is strong BIE-specific evidence that the stored representation may omit
+or normalize a four-word ASM header from an original AS5643 packet. Message ID
+and protected payload size explain the residual exactly. Security, node,
+priority, and their encodings remain unknown; they may be zero, cancel under
+XOR, or be represented elsewhere.
+
+The repository tests preserve the residual as evidence. They do not report the
+VPC as normatively valid until the missing header inputs, applicable AS5643
+revision, coverage, and ordering are established.
+
+### Evidence required to confirm the stored-data interpretation
+
+- the exact meaning and encoding of both pre-payload words in BIE storage;
+- whether BIE removes, transforms, or separately stores IEEE-1394 or AS5643
+  fields;
+- the four candidate omitted ASM-header words, including node, security, and
+  priority;
+- known-good and known-bad VPC examples from an independent decoder;
+- records with different message IDs and protected payload sizes; and
+- controlled heartbeat, STOF, missing-message, and independently varied
+  capture-sampling and AS5643 frame-rate cases.
 
 ## Implementation dispositions
 
@@ -301,6 +399,9 @@ range selection, provenance recording, and handling guidance.
 - Recorded that sampling was attempted at 80 Hz while preserving actual BIE
   timestamps and keeping 80 Hz/100 Hz capture configuration distinct from
   payload production timing.
+- Moved the supplied record family's protocol-word, STOF, missing-header, and
+  VPC observations into this BIE evidence ledger so they cannot be mistaken
+  for the normative AS5643 protocol contract.
 - Kept FireTrac only as possible source-environment context; it is not BIE
   format provenance.
 

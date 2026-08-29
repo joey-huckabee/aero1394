@@ -48,14 +48,59 @@ Future BIE and protocol parsers will operate on byte slices, following
 The streaming forensic reader will supply those slices but will not absorb
 their parsing, validation, policy, or recovery responsibilities.
 
-## Expected growth
+## Protocol and format hierarchy
 
-Modules are added only with evidence-backed behavior. The expected dependency
-direction is:
+ADR-0002, ADR-0009, and ADR-0011 establish separate ownership for the
+IEEE-1394, AS5643, capture-container, and application-payload knowledge. For
+the three related format documents, knowledge narrows in this order:
 
 ```text
-forensic / input adapter -> bie -> ieee1394 -> as5643 -> payload -> analysis
+IEEE1394.md
+    IEEE-1394 wire representations and packet behavior
+        |
+        v
+AS5643.md
+    AS5643 protocol interpretation, independent of capture format
+        |
+        v
+BIE-FORMAT.md
+    BIE container grammar and observations specific to BIE storage
 ```
+
+These arrows express documentation specificity, not standard ownership or
+runtime decode order. IEEE-1394 documentation must not acquire AS5643 or BIE
+layout rules. AS5643 documentation may specialize supported IEEE-1394 forms
+but must not acquire BIE layout rules. BIE documentation owns the outer file
+grammar and any evidence about fields that this particular container retains,
+removes, or normalizes. Program-specific application fields remain in
+[`PAYLOADS.md`](PAYLOADS.md), outside all three generic format contracts.
+
+This ownership follows the accepted boundaries in
+[ADR-0002](adr/0002-separate-capture-protocol-profile-and-analysis-layers.md),
+the document responsibilities in
+[ADR-0009](adr/0009-treat-documentation-and-test-evidence-as-deliverables.md),
+and the evidence gates in
+[ADR-0011](adr/0011-deliver-capabilities-in-evidence-gated-stages.md).
+
+## Expected processing flow
+
+Modules are added only with evidence-backed behavior. The expected processing
+flow is:
+
+```text
+BIE or future input adapter
+    -> captured-event boundary
+        -> ieee1394
+            -> as5643
+                -> payload
+                    -> analysis
+```
+
+The input adapter may be unable to produce the complete IEEE-1394
+representation required by the next layer. In that case it returns preserved
+raw bytes and provenance rather than bypassing the evidence gate or treating a
+BIE-specific observation as an IEEE-1394 or AS5643 fact. Protocol and payload
+modules never depend on BIE types.
 
 The `payload` module is the Rust-native implementation of the profile knowledge
 described by ADR-0002. Definitions are compiled into the tool and selected by

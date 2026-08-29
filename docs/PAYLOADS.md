@@ -120,8 +120,8 @@ payload module sees byte offset zero at record offset `0x18`.
 
 The record-specific protocol words, STOF candidates, VPC evidence, missing ASM
 header hypothesis, and recorder cadence are isolated in
-[`AS5643.md`](AS5643.md). They are context for locating this payload, not fields
-of the Rust application structure.
+[`BIE-FORMAT.md`](BIE-FORMAT.md). They are context for locating this payload,
+not fields of the Rust application structure.
 
 ### Platform production rate
 
