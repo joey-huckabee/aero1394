@@ -2,7 +2,7 @@
 
 #![forbid(unsafe_code)]
 
-use aero1394::bie::{BieFile, BieFileParseError, parse_file};
+use aero1394::bie::{BieReadError, BieReadItem, BieReader, BieRecord};
 use aero1394::forensic::{
     FileOffset, Hexdump, HexdumpConfig, HexdumpConfigError, HexdumpError, HexdumpLine,
     MAX_BYTES_PER_LINE,
@@ -11,8 +11,8 @@ use std::env;
 use std::error::Error;
 use std::ffi::{OsStr, OsString};
 use std::fmt;
-use std::fs::{self, File};
-use std::io::{self, BufWriter, Seek, SeekFrom, Write};
+use std::fs::File;
+use std::io::{self, BufReader, BufWriter, Read, Seek, SeekFrom, Write};
 use std::path::PathBuf;
 use std::process::ExitCode;
 
@@ -106,7 +106,7 @@ enum AppError {
     Operation(String),
     Io { context: String, source: io::Error },
     Hexdump(HexdumpError),
-    Bie(BieFileParseError),
+    Bie(BieReadError),
 }
 
 impl AppError {
@@ -162,8 +162,8 @@ impl From<HexdumpConfigError> for AppError {
     }
 }
 
-impl From<BieFileParseError> for AppError {
-    fn from(error: BieFileParseError) -> Self {
+impl From<BieReadError> for AppError {
+    fn from(error: BieReadError) -> Self {
         Self::Bie(error)
     }
 }
@@ -441,42 +441,88 @@ fn execute_hexdump(arguments: &HexdumpArgs) -> Result<(), AppError> {
 }
 
 fn execute_records(arguments: &RecordsArgs) -> Result<(), AppError> {
-    let bytes = fs::read(&arguments.path).map_err(|error| {
+    let source = File::open(&arguments.path).map_err(|error| {
         AppError::io(
-            format!("could not read '{}'", arguments.path.display()),
+            format!("could not open '{}'", arguments.path.display()),
             error,
         )
     })?;
-    let file = parse_file(&bytes, FileOffset::new(0))?;
+    let mut validation_reader = BieReader::new(BufReader::new(source), FileOffset::new(0));
+    validate_records(&mut validation_reader)?;
+
+    let mut source = validation_reader.into_inner().into_inner();
+    source
+        .seek(SeekFrom::Start(0))
+        .map_err(|error| AppError::io("could not rewind validated BIE input", error))?;
+    let mut record_reader = BieReader::new(BufReader::new(source), FileOffset::new(0));
     let stdout = io::stdout();
     let mut output = BufWriter::new(stdout.lock());
+    let mut record_count = 0_usize;
 
-    render_records(&mut output, &file)
-        .map_err(|error| AppError::io("could not write BIE record inventory", error))?;
+    loop {
+        match record_reader.next_item()? {
+            Some(BieReadItem::Record(record)) => {
+                render_record(&mut output, record_count, &record)
+                    .map_err(|error| AppError::io("could not write BIE record inventory", error))?;
+                record_count = record_count.checked_add(1).ok_or_else(|| {
+                    AppError::Operation("BIE record count cannot be represented by usize".into())
+                })?;
+            }
+            Some(BieReadItem::Terminator { offset }) => {
+                render_terminator(&mut output, offset, record_count)
+                    .map_err(|error| AppError::io("could not write BIE record inventory", error))?;
+                break;
+            }
+            None => {
+                return Err(AppError::Operation(
+                    "BIE reader ended without returning its validated terminator".into(),
+                ));
+            }
+        }
+    }
+
     output
         .flush()
         .map_err(|error| AppError::io("could not flush BIE record inventory", error))
 }
 
-fn render_records(output: &mut impl Write, file: &BieFile<'_>) -> io::Result<()> {
-    for (index, record) in file.records().iter().enumerate() {
-        writeln!(
-            output,
-            "record={index} offset=0x{:016X} data_item_id=0x{:08X} recorder_seconds={} recorder_microseconds={} status_and_length=0x{:08X} unresolved_flags=0x{:08X} data_length={}",
-            record.file_offset().get(),
-            record.data_item_id().get(),
-            record.recorder_time().seconds(),
-            record.recorder_time().microseconds(),
-            record.status_and_length().raw(),
-            record.status_and_length().unresolved_flags(),
-            record.status_and_length().data_length(),
-        )?;
+fn validate_records(reader: &mut BieReader<impl Read>) -> Result<(), AppError> {
+    loop {
+        match reader.next_item()? {
+            Some(BieReadItem::Record(_)) => {}
+            Some(BieReadItem::Terminator { .. }) => return Ok(()),
+            None => {
+                return Err(AppError::Operation(
+                    "BIE reader ended before returning a terminator".into(),
+                ));
+            }
+        }
     }
+}
+
+fn render_record(output: &mut impl Write, index: usize, record: &BieRecord<'_>) -> io::Result<()> {
     writeln!(
         output,
-        "terminator_offset=0x{:016X} records={}",
-        file.terminator_offset().get(),
-        file.records().len()
+        "record={index} offset=0x{:016X} data_item_id=0x{:08X} recorder_seconds={} recorder_microseconds={} status_and_length=0x{:08X} unresolved_flags=0x{:08X} data_length={}",
+        record.file_offset().get(),
+        record.data_item_id().get(),
+        record.recorder_time().seconds(),
+        record.recorder_time().microseconds(),
+        record.status_and_length().raw(),
+        record.status_and_length().unresolved_flags(),
+        record.status_and_length().data_length(),
+    )
+}
+
+fn render_terminator(
+    output: &mut impl Write,
+    offset: FileOffset,
+    record_count: usize,
+) -> io::Result<()> {
+    writeln!(
+        output,
+        "terminator_offset=0x{:016X} records={record_count}",
+        offset.get()
     )
 }
 
@@ -600,10 +646,13 @@ mod tests {
         let bytes = [
             0xDE, 0xAD, 0xBE, 0xEF, 0, 0, 0, 10, 0, 0, 0, 20, 0x40, 0, 0, 1, 0xAA, 0, 0, 0, 0,
         ];
-        let file = parse_file(&bytes, FileOffset::new(0x100)).expect("test BIE parses");
+        let (record, consumed) = aero1394::bie::parse_record(&bytes, FileOffset::new(0x100))
+            .expect("test BIE record parses");
         let mut output = Vec::new();
 
-        render_records(&mut output, &file).expect("write succeeds");
+        render_record(&mut output, 0, &record).expect("record write succeeds");
+        render_terminator(&mut output, FileOffset::new(0x100 + consumed as u64), 1)
+            .expect("terminator write succeeds");
 
         assert_eq!(
             String::from_utf8(output).expect("ASCII output"),

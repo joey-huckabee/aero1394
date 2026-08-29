@@ -20,9 +20,8 @@ sentinel and reports truncation, a missing terminator, or trailing bytes.
 The `records` CLI lists those raw BIE fields without assigning protocol
 semantics. Protocol decoding remains unimplemented.
 
-The next increment is `v0.1.0` release hardening, including bounded processing
-for large record inventories, cross-platform release builds, packaging, and
-smoke tests.
+The next increment is `v0.1.0` release packaging: cross-platform release
+builds, archives, checksums, release notes, and packaged-binary smoke tests.
 
 The scoped gates and incremental path for the first pre-`1.0.0` release are in
 the [`v0.1.0` release plan](docs/RELEASE-PLAN.md).
@@ -62,9 +61,9 @@ cargo run --release -- records path/to/capture.bie
 The inventory reports the record index, absolute offset, BIE data-item ID, raw
 recorder timestamp fields, raw status/length word, unresolved flags, and body
 length. It does not label the BIE ID as an AS5643 Message ID or decode stored
-data. The current command validates the complete file in memory before writing
-output; bounded streaming is a `v0.1.0` release-hardening gate for large
-captures.
+data. The command makes two bounded passes: the first validates without
+emitting output, then the second rewinds and renders while retaining at most
+one 65,551-byte BIE record plus fixed-size I/O buffers.
 
 Each hex-dump line contains a 16-digit absolute file offset, hexadecimal bytes,
 and an ASCII preview. The default 256-byte limit prevents an accidental

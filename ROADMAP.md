@@ -22,8 +22,6 @@ defined in [`docs/RELEASE-PLAN.md`](docs/RELEASE-PLAN.md).
 
 Complete the final release-plan increment:
 
-- replace the `records` command's whole-file buffer with bounded streaming or
-  enforce an evidence-backed resource limit;
 - build with `--release --locked` on Windows and Linux;
 - package the CLI, license, readme, release notes, and SHA-256 checksums;
 - smoke-test packaged binaries; and

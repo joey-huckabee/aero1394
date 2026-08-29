@@ -20,7 +20,7 @@ Library: forensic::Hexdump -> HexdumpLine { absolute offset, raw bytes }
 
 Library: &[u8] + FileOffset -> bie::parse_file -> BieFile { borrowed records }
 
-CLI: records path -> read bytes -> bie::parse_file -> raw BIE text inventory
+CLI: records path -> validate BieReader pass -> render BieReader pass
 ```
 
 The `forensic` module is format-neutral. It does not identify a source as BIE,
@@ -40,11 +40,13 @@ seeking, writing terminal output, and choosing process exit codes are adapter
 concerns. The library can therefore be reused with memory buffers, extracted
 Chapter 10 payloads, or another storage adapter without invoking a process.
 
-The initial `records` adapter reads and validates a complete file before it
-writes any inventory lines, so malformed inputs do not produce a partial
-listing. This whole-file allocation is not the final large-capture strategy;
-bounded streaming or an evidence-backed resource limit is a `v0.1.0` release
-gate in [`RELEASE-PLAN.md`](RELEASE-PLAN.md).
+The `records` adapter makes two bounded passes over its seekable input. The
+first pass validates the complete framing without writing inventory lines, so
+ordinary malformed inputs do not produce a partial listing. The adapter then
+rewinds the same file and renders records during the second pass. `BieReader`
+retains at most one encoded record (65,551 bytes) and uses a fixed 8 KiB scratch
+buffer while checking for trailing data; capture size does not determine its
+working-memory allocation.
 
 The `bie` module parses either one non-terminator record or a strict complete
 file from a byte slice. It derives body boundaries from encoded low-16-bit
@@ -53,7 +55,8 @@ records, and requires the terminal zero word to be the final four bytes. The
 file result owns only its record-view collection; every stored-data region
 continues to borrow the caller's input. Framing reports truncation, missing
 termination, trailing data, and offset overflow without performing validation,
-protocol interpretation, or recovery.
+protocol interpretation, or recovery. `BieReader` composes the same record
+parser with `Read` while bounding memory independently of source size.
 
 ## Dependency direction
 

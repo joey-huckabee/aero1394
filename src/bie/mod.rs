@@ -1,18 +1,24 @@
 //! Safe, slice-oriented parsing for the internal BIE capture format.
 //!
-//! This module parses individual non-terminator records and strict complete
-//! BIE byte slices. Validation, policy, and recovery remain separate later
-//! layers.
+//! This module parses individual non-terminator records, strict complete BIE
+//! byte slices, and bounded record streams. Validation, policy, and recovery
+//! remain separate later layers.
 
 use crate::forensic::FileOffset;
 use std::error::Error;
 use std::fmt;
+use std::io::{self, Read};
 
 /// Number of bytes in the fixed BIE record header.
 pub const RECORD_HEADER_LEN: usize = 16;
 
 /// Number of bytes in the terminal zero word.
 pub const FILE_TERMINATOR_LEN: usize = 4;
+
+/// Largest record expressible by the 16-bit stored-data length.
+pub const MAX_RECORD_LEN: usize = RECORD_HEADER_LEN + u16::MAX as usize;
+
+const STREAM_READ_CHUNK_LEN: usize = 8 * 1024;
 
 const DATA_LENGTH_MASK: u32 = 0x0000_FFFF;
 const UNRESOLVED_FLAGS_MASK: u32 = 0xFFFF_0000;
@@ -316,6 +322,186 @@ impl From<BieRecordParseError> for BieFileParseError {
     }
 }
 
+/// A bounded streaming item from a BIE source.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum BieReadItem<'a> {
+    /// One complete record borrowing the reader's internal record buffer.
+    Record(BieRecord<'a>),
+    /// The terminal zero word at its absolute source offset.
+    Terminator {
+        /// Absolute offset where the terminal zero word begins.
+        offset: FileOffset,
+    },
+}
+
+/// A failure while reading and framing a BIE stream.
+#[derive(Debug)]
+pub enum BieReadError {
+    /// The underlying byte source could not be read.
+    Io {
+        /// Absolute offset of the next byte requested from the source.
+        offset: FileOffset,
+        /// Underlying I/O error.
+        source: io::Error,
+    },
+    /// The bytes violated the strict BIE file grammar.
+    Framing(BieFileParseError),
+}
+
+impl fmt::Display for BieReadError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Io { offset, source } => write!(
+                formatter,
+                "could not read BIE bytes at 0x{:016x}: {source}",
+                offset.get()
+            ),
+            Self::Framing(error) => error.fmt(formatter),
+        }
+    }
+}
+
+impl Error for BieReadError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::Io { source, .. } => Some(source),
+            Self::Framing(error) => Some(error),
+        }
+    }
+}
+
+impl From<BieFileParseError> for BieReadError {
+    fn from(error: BieFileParseError) -> Self {
+        Self::Framing(error)
+    }
+}
+
+impl From<BieRecordParseError> for BieReadError {
+    fn from(error: BieRecordParseError) -> Self {
+        Self::Framing(BieFileParseError::Record(error))
+    }
+}
+
+/// A one-record-at-a-time reader for a strict BIE byte stream.
+///
+/// The internal record buffer never contains more than [`MAX_RECORD_LEN`]
+/// bytes. A returned record borrows that buffer and must be consumed before
+/// calling [`Self::next_item`] again. The reader counts any bytes after a
+/// terminator using a fixed-size scratch buffer so trailing-data diagnostics
+/// also remain bounded.
+pub struct BieReader<R> {
+    reader: R,
+    next_offset: FileOffset,
+    record_buffer: Vec<u8>,
+    finished: bool,
+}
+
+impl<R: Read> BieReader<R> {
+    /// Creates a BIE reader over a source positioned at `start_offset`.
+    #[must_use]
+    pub fn new(reader: R, start_offset: FileOffset) -> Self {
+        Self {
+            reader,
+            next_offset: start_offset,
+            record_buffer: Vec::with_capacity(RECORD_HEADER_LEN),
+            finished: false,
+        }
+    }
+
+    /// Returns ownership of the underlying reader.
+    #[must_use]
+    pub fn into_inner(self) -> R {
+        self.reader
+    }
+
+    /// Reads the next record or the terminal zero word.
+    ///
+    /// `Ok(None)` is returned only after a terminal item has already been
+    /// returned. EOF before a terminator is a framing error.
+    pub fn next_item(&mut self) -> Result<Option<BieReadItem<'_>>, BieReadError> {
+        if self.finished {
+            return Ok(None);
+        }
+
+        self.record_buffer.clear();
+        read_to_len(
+            &mut self.reader,
+            &mut self.record_buffer,
+            FILE_TERMINATOR_LEN,
+            self.next_offset,
+        )?;
+
+        if self.record_buffer.is_empty() {
+            return Err(BieFileParseError::MissingTerminator {
+                offset: self.next_offset,
+            }
+            .into());
+        }
+
+        if self.record_buffer.len() < FILE_TERMINATOR_LEN {
+            return Err(BieRecordParseError::TruncatedHeader {
+                offset: self.next_offset,
+                needed: RECORD_HEADER_LEN,
+                available: self.record_buffer.len(),
+            }
+            .into());
+        }
+
+        if self.record_buffer == [0; FILE_TERMINATOR_LEN] {
+            let terminator_offset = self.next_offset;
+            let terminator_end = checked_file_offset(terminator_offset, FILE_TERMINATOR_LEN)?;
+            let trailing_bytes = count_remaining(&mut self.reader, terminator_end)?;
+            if trailing_bytes != 0 {
+                return Err(BieFileParseError::TrailingData {
+                    offset: terminator_end,
+                    trailing_bytes,
+                }
+                .into());
+            }
+
+            self.next_offset = terminator_end;
+            self.finished = true;
+            return Ok(Some(BieReadItem::Terminator {
+                offset: terminator_offset,
+            }));
+        }
+
+        read_to_len(
+            &mut self.reader,
+            &mut self.record_buffer,
+            RECORD_HEADER_LEN,
+            self.next_offset,
+        )?;
+        if self.record_buffer.len() < RECORD_HEADER_LEN {
+            return Err(BieRecordParseError::TruncatedHeader {
+                offset: self.next_offset,
+                needed: RECORD_HEADER_LEN,
+                available: self.record_buffer.len(),
+            }
+            .into());
+        }
+
+        let status_and_length = StatusAndLength(read_u32_be(&self.record_buffer, 12));
+        let record_len = RECORD_HEADER_LEN
+            .checked_add(status_and_length.data_length())
+            .ok_or(BieFileParseError::OffsetOverflow {
+                offset: self.next_offset,
+                byte_count: usize::MAX,
+            })?;
+        read_to_len(
+            &mut self.reader,
+            &mut self.record_buffer,
+            record_len,
+            self.next_offset,
+        )?;
+
+        let current_offset = self.next_offset;
+        let (record, consumed) = parse_record(&self.record_buffer, current_offset)?;
+        self.next_offset = checked_file_offset(current_offset, consumed)?;
+        Ok(Some(BieReadItem::Record(record)))
+    }
+}
+
 /// Parses a strict, complete BIE byte slice.
 ///
 /// Records are chained using their encoded lengths until a four-byte zero
@@ -461,9 +647,86 @@ fn checked_file_offset(
         .ok_or(BieFileParseError::OffsetOverflow { offset, byte_count })
 }
 
+fn read_to_len(
+    reader: &mut impl Read,
+    buffer: &mut Vec<u8>,
+    target_len: usize,
+    record_offset: FileOffset,
+) -> Result<(), BieReadError> {
+    let mut chunk = [0_u8; STREAM_READ_CHUNK_LEN];
+    while buffer.len() < target_len {
+        let read_offset = checked_file_offset(record_offset, buffer.len())?;
+        let remaining = target_len - buffer.len();
+        let chunk_len = remaining.min(chunk.len());
+        match reader.read(&mut chunk[..chunk_len]) {
+            Ok(0) => break,
+            Ok(bytes_read) => buffer.extend_from_slice(&chunk[..bytes_read]),
+            Err(error) if error.kind() == io::ErrorKind::Interrupted => {}
+            Err(source) => {
+                return Err(BieReadError::Io {
+                    offset: read_offset,
+                    source,
+                });
+            }
+        }
+    }
+    Ok(())
+}
+
+fn count_remaining(
+    reader: &mut impl Read,
+    first_offset: FileOffset,
+) -> Result<usize, BieReadError> {
+    let mut chunk = [0_u8; STREAM_READ_CHUNK_LEN];
+    let mut total = 0_usize;
+    loop {
+        let read_offset = checked_file_offset(first_offset, total)?;
+        match reader.read(&mut chunk) {
+            Ok(0) => return Ok(total),
+            Ok(bytes_read) => {
+                total = total
+                    .checked_add(bytes_read)
+                    .ok_or(BieFileParseError::OffsetOverflow {
+                        offset: first_offset,
+                        byte_count: usize::MAX,
+                    })?;
+            }
+            Err(error) if error.kind() == io::ErrorKind::Interrupted => {}
+            Err(source) => {
+                return Err(BieReadError::Io {
+                    offset: read_offset,
+                    source,
+                });
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::Cursor;
+
+    struct ChunkedReader<R> {
+        inner: R,
+        maximum_read: usize,
+    }
+
+    impl<R> ChunkedReader<R> {
+        fn new(inner: R, maximum_read: usize) -> Self {
+            Self {
+                inner,
+                maximum_read,
+            }
+        }
+    }
+
+    impl<R: Read> Read for ChunkedReader<R> {
+        fn read(&mut self, buffer: &mut [u8]) -> io::Result<usize> {
+            let read_len = buffer.len().min(self.maximum_read);
+            self.inner.read(&mut buffer[..read_len])
+        }
+    }
 
     fn record_bytes(
         data_item_id: u32,
@@ -710,5 +973,85 @@ mod tests {
                 byte_count: FILE_TERMINATOR_LEN,
             }
         );
+    }
+
+    /// Requirements: L3-BIE-001, L3-BIE-003, L3-BIE-004, L3-BIE-007
+    #[test]
+    fn streams_fragmented_reads_one_complete_record_at_a_time() {
+        let first = record_bytes(0x1111_1111, 10, 20, 1, &[0xAA]);
+        let second = record_bytes(0x2222_2222, 30, 40, 2, &[0xBB, 0xCC]);
+        let mut bytes = first;
+        bytes.extend_from_slice(&second);
+        bytes.extend_from_slice(&[0; FILE_TERMINATOR_LEN]);
+        let source = ChunkedReader::new(Cursor::new(bytes), 1);
+        let mut reader = BieReader::new(source, FileOffset::new(0x100));
+
+        let Some(BieReadItem::Record(first)) = reader.next_item().expect("first read succeeds")
+        else {
+            panic!("first item must be a record");
+        };
+        assert_eq!(first.file_offset(), FileOffset::new(0x100));
+        assert_eq!(first.data_item_id(), DataItemId::new(0x1111_1111));
+        assert_eq!(first.stored_data(), [0xAA]);
+
+        let Some(BieReadItem::Record(second)) = reader.next_item().expect("second read succeeds")
+        else {
+            panic!("second item must be a record");
+        };
+        assert_eq!(second.file_offset(), FileOffset::new(0x111));
+        assert_eq!(second.data_item_id(), DataItemId::new(0x2222_2222));
+        assert_eq!(second.stored_data(), [0xBB, 0xCC]);
+
+        assert_eq!(
+            reader.next_item().expect("terminator read succeeds"),
+            Some(BieReadItem::Terminator {
+                offset: FileOffset::new(0x123),
+            })
+        );
+        assert_eq!(reader.next_item().expect("reader is finished"), None);
+    }
+
+    /// Requirements: L3-BIE-002, L3-BIE-003
+    #[test]
+    fn streaming_buffer_accepts_the_maximum_encoded_record_only() {
+        let stored_data = vec![0xA5; u16::MAX as usize];
+        let mut bytes = record_bytes(1, 2, 3, u32::from(u16::MAX), &stored_data);
+        bytes.extend_from_slice(&[0; FILE_TERMINATOR_LEN]);
+        let mut reader = BieReader::new(Cursor::new(bytes), FileOffset::new(0));
+
+        let Some(BieReadItem::Record(record)) = reader.next_item().expect("record read succeeds")
+        else {
+            panic!("first item must be a record");
+        };
+        assert_eq!(record.encoded_len(), MAX_RECORD_LEN);
+        assert_eq!(record.stored_data().len(), u16::MAX as usize);
+
+        assert_eq!(reader.record_buffer.len(), MAX_RECORD_LEN);
+        assert!(matches!(
+            reader.next_item().expect("terminator read succeeds"),
+            Some(BieReadItem::Terminator { .. })
+        ));
+    }
+
+    /// Requirements: L3-BIE-004
+    #[test]
+    fn streaming_trailing_data_count_uses_a_bounded_scratch_buffer() {
+        let trailing_bytes = STREAM_READ_CHUNK_LEN * 2 + 3;
+        let mut bytes = vec![0; FILE_TERMINATOR_LEN];
+        bytes.extend(std::iter::repeat_n(0xAA, trailing_bytes));
+        let mut reader = BieReader::new(Cursor::new(bytes), FileOffset::new(0x20));
+
+        let error = reader
+            .next_item()
+            .expect_err("trailing bytes make the stream malformed");
+
+        assert!(matches!(
+            error,
+            BieReadError::Framing(BieFileParseError::TrailingData {
+                offset,
+                trailing_bytes: actual,
+            }) if offset == FileOffset::new(0x24) && actual == trailing_bytes
+        ));
+        assert_eq!(reader.record_buffer.len(), FILE_TERMINATOR_LEN);
     }
 }
