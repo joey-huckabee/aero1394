@@ -26,49 +26,53 @@ status labels:
 
 ## File and record grammar
 
-A BIE file is a sequence of big-endian, length-delimited records ending in a
-zero-word sentinel:
+A BIE file contains zero or more length-delimited records followed by one
+zero-word sentinel. All multi-byte record fields are encoded in big-endian
+byte order.
 
 ```text
-file := record* zero_word
-
-record :=
-    data_item_id       u32be
-    recorder_seconds   u32be
-    recorder_useconds  u32be
-    status_and_length  u32be
-    stored_data        u8[data_length]
-
-zero_word        := 00 00 00 00
-data_length      := status_and_length & 0x0000_FFFF
-unresolved_flags := status_and_length & 0xFFFF_0000
-record_size      := 16 + data_length
+file        := record* zero_word_sentinel
+record      := record_header stored_data
+record_size := 16 + data_length
 ```
 
-The decoder must not make 132 bytes a universal record size. That size follows
-only for the supplied record family because its stored-data length is `0x0074`,
-or 116 bytes.
+### Record structure
 
-No separate magic, version header, metadata table, or index is represented in
-the current grammar. If a future internal definition adds one, it must be
-treated as an explicit format version rather than guessed from incidental
-bytes.
+Each record consists of a fixed 16-byte header followed immediately by the
+number of stored-data bytes declared in `status_and_length`.
 
-## Record header
-
-| Offset | Width (bytes) | Description |
+| Record offset | Width (bytes) | Field and description |
 | ---: | ---: | --- |
-| `0x00` | 4 | Nonzero data-item identifier encoded as a big-endian unsigned 32-bit integer. |
-| `0x04` | 4 | Whole seconds of the recorder timestamp, encoded as big-endian unsigned Unix seconds. |
-| `0x08` | 4 | Microsecond component of the recorder timestamp, encoded as a big-endian unsigned 32-bit integer. |
-| `0x0C` | 4 | Raw big-endian status/length word. The low 16 bits contain `data_length`; the high 16 bits contain `unresolved_flags`. |
-| `0x10` | N | Stored-data bytes, where `N` is exactly the `data_length` declared by the preceding status/length word. |
+| `0x00` | 4 | `data_item_id` — Nonzero unsigned 32-bit identifier for the stored data. |
+| `0x04` | 4 | `recorder_seconds` — Whole seconds of the recorder timestamp, represented as unsigned Unix seconds. |
+| `0x08` | 4 | `recorder_useconds` — Microsecond component of the recorder timestamp, represented as an unsigned 32-bit integer. |
+| `0x0C` | 4 | `status_and_length` — Raw control word containing unresolved flags in the high 16 bits and `data_length` in the low 16 bits. |
+| `0x10` | N | `stored_data` — Exactly `data_length` bytes; `N` may range from 0 through 65,535. |
 
 ### Status and length word
 
-The supplied records contain `0x00000074` and `0x40000074`. In both cases the
-low value `0x0074` selects 116 following bytes and chains exactly to the next
-record boundary.
+The two components of `status_and_length` are calculated as follows:
+
+```text
+data_length      := status_and_length & 0x0000_FFFF
+unresolved_flags := status_and_length & 0xFFFF_0000
+```
+
+`data_length` counts the entire `stored_data` region, not only the application
+payload. The following example defines the 132-byte records in the supplied
+record family:
+
+| Quantity | Calculation or composition | Example value |
+| --- | --- | ---: |
+| Raw `status_and_length` | Big-endian `u32` | `0x00000074` |
+| `unresolved_flags` | `0x00000074 & 0xFFFF0000` | `0x00000000` |
+| `data_length` | `0x00000074 & 0x0000FFFF` | `0x0074` = 116 bytes |
+| Stored-data contents | 8 protocol-candidate bytes + 92 application bytes + 12 STOF-candidate bytes + 4 VPC-candidate bytes | 116 bytes |
+| Fixed record header | Four 4-byte fields | 16 bytes |
+| Complete record | `16 + data_length` | 132 bytes (`0x84`) |
+
+The alternative observed value `0x40000074` has
+`unresolved_flags = 0x40000000` and the same `data_length` of 116 bytes.
 
 The meaning of upper flag `0x40000000` is not resolved. It occurs in the second
 and third records of each supplied four-record excerpt and is clear in the
@@ -104,6 +108,24 @@ If it is an unsigned Unix counter, it wraps after
 `2106-02-07T06:28:15Z`; interpreting it as signed would instead introduce an
 unwanted 2038 limit. Raw seconds and microseconds remain part of the decoded
 model even when a calendar representation is available.
+
+### Zero-word sentinel
+
+The zero-word sentinel is exactly four zero bytes at the offset where the next
+record's `data_item_id` would otherwise begin:
+
+```text
+zero_word_sentinel := 00 00 00 00
+```
+
+The sentinel terminates the BIE file. It is not a record and is not followed by
+the remaining 12 header bytes or a stored-data region. A conforming file ends
+immediately after the sentinel; any following bytes are trailing data. Because
+zero is reserved for the sentinel, every record has a nonzero `data_item_id`.
+
+No separate magic, version header, metadata table, or index is represented in
+the current grammar. Any future addition of a file-level structure requires an
+explicit format version.
 
 ## Supported parser contract
 
