@@ -68,15 +68,16 @@ needed to inspect unsupported or invalid input. Chapter 10 remains a future
 input adapter rather than a dependency of BIE decoding.
 
 A module should become a separate crate only when the extraction conditions in
-ADR-0004 are met. Current public types are deliberately small so the package
-layout does not prematurely stabilize an unknown BIE model.
+ADR-0004 are met. Current public types are deliberately small so unresolved BIE
+semantics, including status flag `0x40000000`, do not become accidental API
+guarantees.
 
 ## Evidence available for the next slice
 
-The supplied BIE excerpts establish one 16-byte big-endian, length-delimited
-record header and a strong zero-word EOF inference. The parser should implement
-only that generic header and length boundary first, preserving each stored
-region as raw bytes.
+The internal BIE definition and supplied excerpts establish a 16-byte
+big-endian, length-delimited record header and zero-word EOF sentinel. The
+parser should implement that generic header and length boundary first,
+preserving each stored region and unresolved flag as raw evidence.
 
 Protocol-envelope interpretation and the future typed payload registry remain
 downstream operations. The complete evidence map is in `BIE-FORMAT.md`; payload

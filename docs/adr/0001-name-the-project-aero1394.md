@@ -7,9 +7,9 @@
 ## Context
 
 The repository began under the working name `bie-decoder` because its first and
-most urgent job is decoding `.bie` recordings produced by a DAP Technologies
-FireSpy recorder. That name describes the initial file format, but not the
-long-lived responsibility of the software.
+most urgent job is decoding `.bie` recordings produced by an internal
+simulation recording workflow. That name describes the initial file format,
+but not the long-lived responsibility of the software.
 
 The planned processing pipeline separates capture containers from the traffic
 they carry:
@@ -20,7 +20,7 @@ BIE capture ---------+
 Chapter 10 capture --+
 ```
 
-BIE is expected to be a recorder-specific container. Chapter 10 may become a
+BIE is an internally defined capture container. Chapter 10 may become a
 second input container later. The stable subject of the project is the
 IEEE-1394 and AS5643 traffic, validation, timing, and engineering data exposed
 through those containers.
@@ -67,8 +67,8 @@ scope only where it supplies IEEE-1394/AS5643 traffic to this pipeline. A
 general-purpose Chapter 10 toolkit or multi-bus avionics decoder is outside the
 scope of this decision.
 
-Public identifiers will not use `FireSpy`. The vendor name may be used in
-documentation when describing compatibility or verified file provenance.
+Public identifiers will not use vendor product names. Product names may be used
+in documentation when describing verified compatibility or capture context.
 
 Before publishing packages, maintainers must confirm and reserve the exact
 names on crates.io and PyPI. A preliminary name search is not a reservation.

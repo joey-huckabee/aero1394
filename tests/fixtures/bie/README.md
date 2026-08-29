@@ -5,8 +5,14 @@ messages supplied during the 2026-08-28 BIE investigation. They are text so
 their exact bytes remain reviewable. A test helper should reject non-hex tokens
 and convert each pair to one byte before passing the result to a parser.
 
-The fixtures describe one observed BIE variant. They are not an authoritative
-vendor conformance corpus.
+The fixtures describe the currently observed internal BIE record family. They
+are not a complete internal conformance corpus.
+
+The supplied capture context records that message sampling was attempted at
+80 Hz. The fixture timestamps preserve actual observations, including 12.5 ms,
+25 ms, and 24.142 ms gaps; tests must not replace them with an ideal sampling
+grid. FireSpy sampling supports 80 Hz and 100 Hz configurations, which remain
+capture provenance rather than BIE wire fields.
 
 ## `startup-four-records.hex`
 

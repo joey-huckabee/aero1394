@@ -6,10 +6,10 @@
 
 ## Context
 
-No authoritative BIE specification or sample capture is currently present in
-the repository. The files are believed to be produced by a DAP Technologies
-FireSpy recorder, but that provenance has not yet been confirmed from file
-contents, recorder metadata, or vendor documentation.
+At the time of this decision, no complete internal BIE specification or sample
+capture was present in the repository. BIE is an internally defined format;
+the investigation is intended to turn the available byte evidence into a
+reviewable implementation contract.
 
 IEEE-1394 defines bus behavior; it does not by itself define how a recorder
 stores captured traffic. A BIE record could contain physical-layer data, link
@@ -82,14 +82,14 @@ leads, not claims about BIE:
 | Linux `isodump` version 1 format | Recognize or rule out a known isochronous capture representation |
 | IEEE-1394 specification for the selected packet form | Validate packet fields, length relationships, byte/bit order, and applicable CRCs |
 | SAE AS5643 material for the selected revision | Test candidate ASM, status, heartbeat, STOF, timing, and parity interpretations |
-| FireSpy software export of the same interval | Correlate record counts, timestamps, channels, packet types, and decoded values independently |
+| Independent recorder or analyzer view of the same interval | Correlate record counts, timestamps, channels, packet types, and decoded values independently |
 
 ## Required starting evidence
 
 The first milestone requires at least one representative `.bie` sample. The
-strongest companion artifact is an export from the vendor application covering
-the same time interval. Hardware model, firmware, recorder software version,
-capture settings, and any known traffic should be retained with the sample.
+strongest companion artifact is an independently decoded view covering the
+same time interval. Recorder application version, capture settings, and any
+known traffic should be retained with the sample.
 
 Sensitive or proprietary captures must not be committed without explicit
 authorization. Prefer sanitized extracts and synthetic fixtures once the

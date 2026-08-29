@@ -3,11 +3,9 @@
 Aero1394 is a Rust-first toolkit for decoding and analyzing aerospace
 IEEE-1394 traffic, with SAE AS5643 support as the primary protocol target.
 
-The immediate goal is to decode `.bie` recordings produced by a `BIE_LINUX`
-simulation recorder and believed to be related to DAP Technologies/FireSpy
-workflows. Sanitized record excerpts now support one evidence-backed BIE record
-family, while the exact vendor provenance and other format variants remain
-unresolved.
+The immediate goal is to decode internally defined `.bie` recordings used by
+the simulation workflow. Sanitized record excerpts support the current BIE
+record family and its implementation contract.
 
 ## Project status
 
@@ -20,10 +18,8 @@ family. BIE parsing and protocol decoding remain unimplemented.
 The next milestone is a safe, slice-oriented BIE framing parser exercised by
 the sanitized golden messages under `tests/fixtures/bie`.
 
-Vendor research uncovered a format-provenance mismatch: DAP documents
-native FireSpy recordings as `.fsr`, not `.bie`. See the
-[BIE format research ledger](docs/BIE-FORMAT.md) before making container-format
-assumptions.
+See the [internal BIE format contract](docs/BIE-FORMAT.md) for the supported
+grammar, evidence limits, and unresolved status flag.
 
 ## Build and inspect a capture
 
@@ -58,15 +54,14 @@ library/CLI boundary.
 ## Processing model
 
 ```text
-BIE capture ---------+
-                     +--> IEEE-1394 --> AS5643 --> built-in payload --> analysis
-Chapter 10 capture --+                                            --> signals
+BIE capture --> IEEE-1394 --> AS5643 --> built-in payload --> analysis
+                                                               --> signals
 ```
 
-BIE is the first and urgent input format. Chapter 10 is a future input adapter,
-not part of the initial implementation. Container parsing, bus decoding,
-protocol decoding, network-specific interpretation, and analysis remain
-separate layers.
+BIE is the current input format. Container parsing, bus decoding, protocol
+decoding, network-specific interpretation, and analysis remain separate
+layers. Candidate future input adapters are listed only as forward work in the
+[roadmap](ROADMAP.md).
 
 ## Planned deliverables
 
@@ -97,7 +92,8 @@ See the [L1 product requirements](docs/L1.md),
 traceability. [Built-in payload definitions](docs/PAYLOADS.md) describe the
 Rust-native extension model and current application-definition evidence. The
 [provisional output schemas](docs/OUTPUTS.md) preserve the CSV, Parquet, and
-time presentation direction without making it part of BIE parsing.
+time presentation direction without making it part of BIE parsing. Future-only
+work is maintained in [`ROADMAP.md`](ROADMAP.md).
 
 ## Architecture decisions
 

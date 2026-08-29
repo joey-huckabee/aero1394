@@ -87,7 +87,6 @@ Recording Date: Wed Jul 31 08:05:48 2024
 Data File: Startup.draw.data.1394.vs_bus_b3.unused.bie
 Data Type: IEEE 1394
 Data Code: vs_bus_b3
-Hardware Type: BIE_LINUX
 Data Items Recorded: msfcs_storesmassdata_b ID=00005D04 Size=92
 Recorder Buffer Mode: Direct to File (local disk)
 Data Set Count: 1
@@ -136,11 +135,12 @@ elapsed recorder time = 14.6 seconds
 ```
 
 This is a property of this platform payload, not a FireSpy operating rate and
-not a generic IEEE-1394 or AS5643 rule. FireSpy operates at a configured 80 Hz
-or 100 Hz cadence; the supplied timestamps are consistent with the 12.5 ms,
-80 Hz case. The 12.5 ms and 25 ms record gaps do not by themselves define a
-formal scheduling relationship between the platform's 60 Hz producer and the
-recorder cadence.
+not a generic IEEE-1394 or AS5643 rule. Sampling of the supplied messages was
+attempted at 80 Hz, and the surrounding FireSpy sampling context supports
+80 Hz and 100 Hz configurations. Actual BIE timestamps, rather than an ideal
+sample grid, remain authoritative. The observed gaps do not define a formal
+scheduling relationship between the platform's 60 Hz producer and capture
+sampling.
 
 ### Known and provisional field map
 

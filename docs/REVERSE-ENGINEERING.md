@@ -92,8 +92,8 @@ For every potentially meaningful pattern, record:
 
 Do not rename an unknown value after a protocol concept merely because one bit
 pattern is plausible. Compare multiple records and, when possible, a matching
-vendor export. The evidence sequence and confidence terms are defined in
-[ADR-0005](adr/0005-reverse-engineer-bie-with-an-evidence-led-process.md).
+independently decoded view. The evidence sequence and confidence terms are
+defined in [ADR-0005](adr/0005-reverse-engineer-bie-with-an-evidence-led-process.md).
 
 When a supplied message is authorized for repository use, preserve the minimum
 sanitized bytes needed for a golden case under `tests/fixtures`. Document byte
@@ -105,7 +105,8 @@ concatenating excerpts from different file offsets.
 
 `hexdump` is observational only. It does not currently:
 
-- identify BIE, FSR, FSP, RGN, Chapter 10, or JBIG signatures;
+- identify BIE or future input-adapter signatures listed in
+  [`ROADMAP.md`](../ROADMAP.md);
 - calculate or validate record lengths;
 - locate repeated structures;
 - infer timestamps or byte order;

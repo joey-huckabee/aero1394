@@ -34,7 +34,7 @@ file or add `--check` to detect drift without writing.
 | --- | --- | --- | --- |
 | L2-BIE-001 | L3-BIE-001, L3-BIE-002, L3-BIE-003 | _(TBD)_ | Draft |
 | L2-BIE-002 | L3-BIE-004, L3-BIE-005 | _(TBD)_ | Draft |
-| L2-BIE-003 | L3-BIE-006, L3-BIE-007, L3-BIE-008 | _(TBD)_ | Draft |
+| L2-BIE-003 | L3-BIE-006, L3-BIE-007, L3-BIE-008 | `ROADMAP.md`<br>`docs/BIE-FORMAT.md`<br>`tests/fixtures/bie/README.md` | Draft |
 | L2-BIE-004 | L3-BIE-009 | _(TBD)_ | Draft |
 | L2-BIE-005 | L3-BIE-010 | _(TBD)_ | Draft |
 
@@ -44,7 +44,7 @@ file or add `--check` to detect drift without writing.
 
 | L1 ID | L2 children | Direct artifacts | Status |
 | --- | --- | --- | --- |
-| L1-TIM-001 | L2-TIM-001, L2-TIM-002, L2-TIM-003 | _(none)_ | Draft |
+| L1-TIM-001 | L2-TIM-001, L2-TIM-002, L2-TIM-003, L2-TIM-004 | _(none)_ | Draft |
 
 **L2 -> L3 -> Verification artifacts**
 
@@ -53,6 +53,7 @@ file or add `--check` to detect drift without writing.
 | L2-TIM-001 | L3-TIM-001, L3-TIM-002, L3-TIM-003, L3-TIM-004 | _(TBD)_ | Draft |
 | L2-TIM-002 | L3-TIM-005, L3-TIM-006 | _(TBD)_ | Draft |
 | L2-TIM-003 | L3-TIM-007, L3-TIM-008 | _(TBD)_ | Draft |
+| L2-TIM-004 | L3-TIM-009, L3-TIM-010 | `docs/AS5643.md`<br>`docs/BIE-FORMAT.md`<br>`tests/fixtures/bie/README.md` | Draft |
 
 ### L1-PRO: Protocol-envelope and integrity handling
 
@@ -130,23 +131,23 @@ file or add `--check` to detect drift without writing.
 | Category | L1 | L2 | L3 | L2 tested | L3 tested | L2 verified | L3 verified |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | BIE | 1 | 5 | 10 | 0 | 0 | 0 | 0 |
-| TIM | 1 | 3 | 8 | 0 | 0 | 0 | 0 |
+| TIM | 1 | 4 | 10 | 0 | 0 | 0 | 0 |
 | PRO | 1 | 3 | 5 | 0 | 1 | 0 | 1 |
 | PAY | 1 | 4 | 12 | 0 | 0 | 0 | 2 |
 | OUT | 1 | 2 | 6 | 0 | 0 | 0 | 1 |
 | TST | 1 | 3 | 6 | 0 | 1 | 0 | 3 |
-| **Total** | **6** | **20** | **47** | **0** | **2** | **0** | **7** |
+| **Total** | **6** | **21** | **49** | **0** | **2** | **0** | **7** |
 
-**Tested by at least one marker**: 2 of 67 (3.0%).
+**Tested by at least one marker**: 2 of 70 (2.9%).
 
-**Verified by a test or named non-test evidence**: 7 of 67 (10.4%).
+**Verified by a test or named non-test evidence**: 7 of 70 (10.0%).
 
 ### Applicability summary
 
 | Applicability | L3 requirements |
 | --- | --- |
-| Active | 30 |
-| Evidence-limited | 8 |
+| Active | 31 |
+| Evidence-limited | 9 |
 | Deferred | 9 |
 
 ### Orphan check

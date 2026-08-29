@@ -6,10 +6,10 @@
 
 ## Context
 
-The first requested input is a `.bie` file believed to have been recorded by a
-DAP Technologies FireSpy device. A BIE file is not assumed to be the IEEE-1394
-wire format itself. It may contain recorder-specific framing, timestamps,
-channel information, status flags, padding, or completed transactions.
+The first requested input is an internally defined `.bie` recording. A BIE
+file is not the IEEE-1394 wire format itself. It may contain capture framing,
+timestamps, channel information, status flags, padding, or completed
+transactions.
 
 The captured bytes may then contain IEEE-1394 packets. Some of those packets
 may carry SAE AS5643 messages. Interpreting an AS5643 payload as aircraft

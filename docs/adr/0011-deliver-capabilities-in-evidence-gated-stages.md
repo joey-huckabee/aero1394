@@ -22,7 +22,8 @@ Deliver Aero1394 in the following evidence-gated stages.
 
 ### Stage 0: Evidence acquisition and repository baseline
 
-- Obtain a representative BIE capture and matching vendor export if possible.
+- Obtain a representative BIE capture and independently decoded view if
+  possible.
 - Record source, versions, hashes, sensitivity, and redistribution constraints.
 - Establish the ADR baseline and a clean project README.
 
@@ -144,14 +145,14 @@ validation each provide independent operational value.
 
 ## Immediate next step
 
-Acquire and characterize one representative BIE capture plus a matching vendor
-export if available. Once that input exists, scaffold the Stage 1 Rust vertical
-slice rather than guessing a record API in advance.
+Acquire and characterize one representative BIE capture plus an independently
+decoded view if available. Once that input exists, scaffold the Stage 1 Rust
+vertical slice rather than guessing a record API in advance.
 
 ## Implementation update: 2026-08-28
 
 The Stage 1 hexdump slice is implemented. Supplied simulation excerpts and
 summary metadata now provide sufficient evidence to begin the Stage 2 framing
-parser for the observed variant. The next slice is the length-delimited BIE
-record boundary and zero-word termination behavior documented in
-`docs/BIE-FORMAT.md`, verified against `tests/fixtures/bie`.
+parser for the current internal record family. The next slice is the
+length-delimited BIE record boundary and zero-word termination behavior
+documented in `docs/BIE-FORMAT.md`, verified against `tests/fixtures/bie`.
