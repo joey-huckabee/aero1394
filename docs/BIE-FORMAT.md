@@ -67,7 +67,7 @@ record family:
 | Raw `status_and_length` | Big-endian `u32` | `0x00000074` |
 | `unresolved_flags` | `0x00000074 & 0xFFFF0000` | `0x00000000` |
 | `data_length` | `0x00000074 & 0x0000FFFF` | `0x0074` = 116 bytes |
-| Stored-data contents | 8 protocol-candidate bytes + 92 application bytes + 12 STOF-candidate bytes + 4 VPC-candidate bytes | 116 bytes |
+| Stored-data contents | 8 AS5643 payload-header bytes + 92 application bytes + 12 STOF-offset bytes + 4 VPC bytes | 116 bytes |
 | Fixed record header | Four 4-byte fields | 16 bytes |
 | Complete record | `16 + data_length` | 132 bytes (`0x84`) |
 
@@ -179,118 +179,72 @@ built-in payload decoder. This specification records a separate, explicitly
 scoped interpretation for the supplied record family below; that interpretation
 does not change the generic parser contract.
 
-The supplied BIE stored-data region does not contain all information normally
-expected in a complete IEEE-1394 wire packet. No complete link header, header
-CRC, or data CRC has been identified around the application bytes. BIE may
-retain a partial or normalized representation, but the current format evidence
-does not establish which wire information was removed or transformed. The
-higher-level evidence needed to define an IEEE-1394 wire decoder is tracked in
-[`IEEE1394.md`](IEEE1394.md).
+For the mapped record family, the BIE stored-data region is a normalized
+protocol representation rather than a complete IEEE-1394 wire packet. It
+omits the IEEE-1394 link header, header CRC, and data CRC, as well as the
+four-word AS5643 ASM header. [`IEEE1394.md`](IEEE1394.md) owns the excluded
+wire-level definitions.
 
-The normative AS5643 protocol boundary is tracked independently in
+The assumed AS5643 field definitions are specified independently in
 [`AS5643.md`](AS5643.md), and application definitions are kept in
-[`PAYLOADS.md`](PAYLOADS.md). The BIE-specific observations below do not define
-either standard.
+[`PAYLOADS.md`](PAYLOADS.md). The table below defines only how this BIE record
+family stores that logical AS5643 structure.
 
 The BIE container does not encode the configured sample-attempt rate or define
 a scheduling relationship among acquisition, AS5643 frames, and payload
 production. Those values belong to capture provenance and the appropriate
 downstream layer.
 
-## Observed stored-data layout for the supplied record family
+## AS5643 stored-data mapping for data-item `0x00005D04`
 
-For records with data-item ID `0x00005D04`, the stored-data region is 116
-bytes. The following split is reproducible across the supplied BIE fixtures.
-Offsets are relative to the beginning of `stored_data`, not the BIE record.
-Protocol names in the table are candidates derived by comparison with AS5643;
-they are not confirmed AS5643 fields.
+For records with data-item ID `0x00005D04`, BIE stores the AS5643 payload
+header, 92 application bytes, and AS5643 packet trailer as a 116-byte
+`stored_data` region. BIE omits the four-word ASM header and the surrounding
+IEEE-1394 header and CRC fields. Offsets below are relative to the beginning of
+`stored_data`, not the BIE record.
 
-| Stored-data offset | Width | BIE interpretation | Evidence |
+| Stored-data offset | Width | Stored field | AS5643 definition |
 | ---: | ---: | --- | --- |
-| `0x00` | 4 | Neutral protocol word 0; health-status position candidate | Inferred; observed value is zero |
-| `0x04` | 4 | Neutral protocol word 1; heartbeat position candidate | Position inferred; behavior contradicts the expected `+1` sequence |
-| `0x08` | 92 | Application bytes for data-item ID `0x00005D04` | **Confirmed** by independent summary size and field alignment |
-| `0x64` | 4 | STOF transmit-offset candidate, observed `1400` | Strong inference |
-| `0x68` | 4 | STOF receive-offset candidate, observed `500` | Strong inference |
-| `0x6C` | 4 | STOF datapump-offset candidate, observed `500` | Strong inference |
-| `0x70` | 4 | VPC candidate | Strong inference from repeated XOR/complement behavior |
+| `0x00` | 4 | Health Status | [`AS5643.md`](AS5643.md#health-status) |
+| `0x04` | 4 | Heartbeat | [`AS5643.md`](AS5643.md#heartbeat) |
+| `0x08` | 92 | Application data for message `0x00005D04` | [`AS5643.md`](AS5643.md#application-data) and [`PAYLOADS.md`](PAYLOADS.md#msfcs_storesmassdata_b) |
+| `0x64` | 4 | STOF Transmit Offset | [`AS5643.md`](AS5643.md#stof-transmit-offset) |
+| `0x68` | 4 | STOF Receive Offset | [`AS5643.md`](AS5643.md#stof-receive-offset) |
+| `0x6C` | 4 | STOF Datapump Offset | [`AS5643.md`](AS5643.md#stof-datapump-offset) |
+| `0x70` | 4 | Vertical Parity Check | [`AS5643.md`](AS5643.md#vertical-parity-check) |
 
-The byte accounting is exact for this record family:
-
-```text
-neutral protocol words    8
-application payload      92
-three STOF candidates    12
-VPC candidate             4
-                         ---
-stored data             116 (0x74)
-```
-
-This layout is an observed BIE representation, not a universal BIE record
-shape or a normative AS5643 message grammar. The generic BIE parser returns all
-116 bytes as opaque stored data. A later, explicitly selected interpretation
-may expose the split while preserving every raw word.
-
-### Heartbeat discrepancy
-
-AS5643 places Health Status and Heartbeat ahead of message data, which makes
-the first two stored words plausible positional candidates. The second word
-does not exhibit the expected simple heartbeat increment. Near the end of the
-supplied recording it changes as follows:
+The byte accounting is:
 
 ```text
-049CBDEE
-049CBF8E   delta 416
-049CC149   delta 443
-049CC304   delta 443
+Health Status and Heartbeat    8
+application data              92
+three STOF offsets            12
+Vertical Parity Check          4
+                              ---
+stored_data                  116 (0x74)
 ```
 
-The stable BIE-facing model must therefore retain neutral names such as
-`protocol_word_0` and `protocol_word_1`. Plausible explanations include a BIE
-transformation, producer behavior that differs from the expected sequence, a
-different meaning for the supplied size, or another normalization layer. None
-is currently established.
-
-### VPC evidence and missing-header hypothesis
-
-For every complete supplied record checked, complementing the XOR of all
-visible words from protocol word 0 through the third STOF candidate produces a
-value whose XOR difference from the stored VPC candidate is constant:
+The retained AS5643 payload and trailer begin 16 bytes after the omitted
+logical ASM header. Thus, for every retained field:
 
 ```text
-visible calculation XOR stored VPC = 0x00005D60
+logical_ASM_offset = BIE_stored_data_offset + 0x10
 ```
 
-For this message, that residual also equals:
+The omitted ASM header is reconstructed for this record family as follows:
 
-```text
-data_item_id                 0x00005D04
-XOR protected payload size  0x00000064  (92 + 8)
-                             ----------
-                             0x00005D60
-```
+| AS5643 header field | BIE source or profile value | Definition |
+| --- | --- | --- |
+| Message ID | BIE `data_item_id` = `0x00005D04` | [`AS5643.md`](AS5643.md#message-id) |
+| Reserved/security | Profile constant `0x00000000` | [`AS5643.md`](AS5643.md#reservedsecurity-word) |
+| Node ID | Profile constant `0x00000000` | [`AS5643.md`](AS5643.md#node-id) |
+| Priority/payload length | Profile constant `0x00000064` | [`AS5643.md`](AS5643.md#priority-and-payload-length) |
 
-This is strong BIE-specific evidence that the stored representation may omit
-or normalize a four-word ASM header from an original AS5643 packet. Message ID
-and protected payload size explain the residual exactly. Security, node,
-priority, and their encodings remain unknown; they may be zero, cancel under
-XOR, or be represented elsewhere.
-
-The repository tests preserve the residual as evidence. They do not report the
-VPC as normatively valid until the missing header inputs, applicable AS5643
-revision, coverage, and ordering are established.
-
-### Evidence required to confirm the stored-data interpretation
-
-- the exact meaning and encoding of both pre-payload words in BIE storage;
-- whether BIE removes, transforms, or separately stores IEEE-1394 or AS5643
-  fields;
-- the four candidate omitted ASM-header words, including node, security, and
-  priority;
-- known-good and known-bad VPC examples from an independent decoder;
-- records with different message IDs and protected payload sizes; and
-- controlled heartbeat, STOF, missing-message, and independently varied
-  capture-sampling and AS5643 frame-rate cases.
+The generic BIE parser continues to return `stored_data` as an opaque byte
+region. The AS5643 decoder applies profile
+`aero1394-assumed-as5643b-v1` only after the record family is selected.
+Heartbeat sequence evaluation, STOF-offset interpretation, and VPC validation
+follow the linked AS5643 definitions; they are not BIE framing rules.
 
 ## Implementation dispositions
 

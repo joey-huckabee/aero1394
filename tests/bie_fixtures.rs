@@ -35,15 +35,22 @@ fn assert_common_record(bytes: &[u8], base: usize) {
     assert_eq!(be_u32(bytes, base + 124), 500);
 }
 
-fn assert_observed_vpc_residual(bytes: &[u8], base: usize) {
+fn assert_assumed_as5643_vpc_valid(bytes: &[u8], base: usize) {
+    let message_id = be_u32(bytes, base);
+    let reserved_security = 0_u32;
+    let node_id = 0_u32;
+    let priority_and_payload_length = 0x0000_0064_u32;
+    let reconstructed_header_xor =
+        message_id ^ reserved_security ^ node_id ^ priority_and_payload_length;
     let visible_xor = (base + 16..base + 128)
         .step_by(4)
         .map(|offset| be_u32(bytes, offset))
         .fold(0, |accumulator, word| accumulator ^ word);
-    let calculated_vpc = !visible_xor;
+    let calculated_vpc = !(reconstructed_header_xor ^ visible_xor);
     let stored_vpc = be_u32(bytes, base + 128);
 
-    assert_eq!(calculated_vpc ^ stored_vpc, 0x0000_5D60);
+    assert_eq!(reconstructed_header_xor, 0x0000_5D60);
+    assert_eq!(calculated_vpc, stored_vpc);
 }
 
 /// Requirements: L3-TST-001
@@ -72,7 +79,7 @@ fn startup_fixture_preserves_four_consecutive_records() {
     for record_index in 0..4 {
         let base = record_index * 132;
         assert_common_record(&bytes, base);
-        assert_observed_vpc_residual(&bytes, base);
+        assert_assumed_as5643_vpc_valid(&bytes, base);
         assert_eq!(be_u32(&bytes, base + 4), 0x66AA_369B);
         assert_eq!(be_u32(&bytes, base + 8), microseconds[record_index]);
         assert_eq!(be_u32(&bytes, base + 12), status_lengths[record_index]);
@@ -87,7 +94,7 @@ fn end_fixture_preserves_four_records_and_original_terminator() {
     let bytes = fixture_bytes(include_str!("fixtures/bie/end-four-records.hex"));
     let microseconds = [0x0004_247F, 0x0004_82CD, 0x0004_B3A1, 0x0005_1549];
     let status_lengths = [0x0000_0074, 0x4000_0074, 0x4000_0074, 0x0000_0074];
-    let protocol_word_1 = [0x049C_BDEE, 0x049C_BF8E, 0x049C_C149, 0x049C_C304];
+    let heartbeats = [0x049C_BDEE, 0x049C_BF8E, 0x049C_C149, 0x049C_C304];
     let payload_ticks = [
         0x0000_24E5_EC3B_E6C4,
         0x0000_24E5_FA16_0810,
@@ -100,11 +107,11 @@ fn end_fixture_preserves_four_records_and_original_terminator() {
     for record_index in 0..4 {
         let base = record_index * 132;
         assert_common_record(&bytes, base);
-        assert_observed_vpc_residual(&bytes, base);
+        assert_assumed_as5643_vpc_valid(&bytes, base);
         assert_eq!(be_u32(&bytes, base + 4), 0x66AA_36AA);
         assert_eq!(be_u32(&bytes, base + 8), microseconds[record_index]);
         assert_eq!(be_u32(&bytes, base + 12), status_lengths[record_index]);
-        assert_eq!(be_u32(&bytes, base + 20), protocol_word_1[record_index]);
+        assert_eq!(be_u32(&bytes, base + 20), heartbeats[record_index]);
         assert_eq!(be_u64(&bytes, base + 24), payload_ticks[record_index]);
         assert_eq!(be_u32(&bytes, base + 32), 0x0100_0000);
         assert_eq!(be_u32(&bytes, base + 128), vpcs[record_index]);

@@ -23,9 +23,9 @@ capture provenance rather than BIE wire fields.
 - Recorder microseconds: `733129`, `745629`, `758129`, `783129`.
 - Status/length words: `0x00000074`, `0x40000074`, `0x40000074`,
   `0x00000074`.
-- Stored VPC candidates: `0x27699B11`, `0x11CEB626`, `0x03150B9E`,
+- Stored VPC values: `0x27699B11`, `0x11CEB626`, `0x03150B9E`,
   `0xFEEB8E2D`.
-- Trailer candidates in every record: STOF TX 1400, RX 500, datapump 500.
+- AS5643 trailer values in every record: STOF TX 1400, RX 500, datapump 500.
 - The application data is mostly sparse and includes aligned `450.0` and
   `62.5` float candidates.
 
@@ -36,11 +36,11 @@ capture provenance rather than BIE wire fields.
   `0x1C434..0x1C437`.
 - Every record has data-item ID `0x00005D04`, stored-data length 116, and
   payload raw status candidate `0x01000000`.
-- Protocol word 1 values: `0x049CBDEE`, `0x049CBF8E`, `0x049CC149`,
+- Heartbeat values: `0x049CBDEE`, `0x049CBF8E`, `0x049CC149`,
   `0x049CC304`.
 - Payload ticks: `0x000024E5EC3BE6C4`, `0x000024E5FA160810`,
   `0x000024E607EB19B1`, `0x000024E614F013B3`.
-- Stored VPC candidates: `0xED45F5A5`, `0xFB681911`, `0x06957674`,
+- Stored VPC values: `0xED45F5A5`, `0xFB681911`, `0x06957674`,
   `0x158E7E3B`.
 - The final recorder time is `2024-07-31T13:05:46.333129Z`.
 - Twenty populated float candidates are listed in `docs/PAYLOADS.md`.

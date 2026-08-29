@@ -69,7 +69,7 @@ file or add `--check` to detect drift without writing.
 | --- | --- | --- | --- |
 | L2-PRO-001 | L3-PRO-001 | _(TBD)_ | Draft |
 | L2-PRO-002 | L3-PRO-002, L3-PRO-003 | _(TBD)_ | Draft |
-| L2-PRO-003 | L3-PRO-004, L3-PRO-005 | `tests/bie_fixtures.rs::end_fixture_preserves_four_records_and_original_terminator`<br>`tests/bie_fixtures.rs::startup_fixture_preserves_four_consecutive_records` | Partially Implemented |
+| L2-PRO-003 | L3-PRO-004, L3-PRO-005 | `docs/AS5643.md`<br>`docs/BIE-FORMAT.md`<br>`tests/bie_fixtures.rs`<br>`tests/bie_fixtures.rs::end_fixture_preserves_four_records_and_original_terminator`<br>`tests/bie_fixtures.rs::startup_fixture_preserves_four_consecutive_records` | Partially Implemented |
 
 ### L1-PAY: Built-in application payload decoding
 

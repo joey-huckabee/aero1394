@@ -97,9 +97,11 @@ BIE or future input adapter
 ```
 
 The input adapter may be unable to produce the complete IEEE-1394
-representation required by the next layer. In that case it returns preserved
-raw bytes and provenance rather than bypassing the evidence gate or treating a
-BIE-specific observation as an IEEE-1394 or AS5643 fact. Protocol and payload
+representation required by the next layer. It always returns preserved raw
+bytes and provenance. A caller may additionally select a named provisional
+profile that reconstructs missing protocol inputs from explicit assumptions;
+those results carry the profile identifier and an assumption-dependent marker
+rather than being presented as verified wire facts. Protocol and payload
 modules never depend on BIE types.
 
 The `payload` module is the Rust-native implementation of the profile knowledge

@@ -84,9 +84,9 @@ BIE a FireTrac, FireSpy, or DAP-defined file format.
 - Recorded that sampling was attempted at 80 Hz while preserving actual BIE
   timestamps and keeping 80 Hz/100 Hz capture configuration distinct from
   payload production timing.
-- Moved the supplied record family's protocol-word, STOF, missing-header, and
-  VPC observations into the BIE specification so they cannot be mistaken for
-  the normative AS5643 protocol contract.
+- Adopted a provisional AS5643 profile for Health Status, Heartbeat, STOF
+  offsets, the omitted ASM header, and VPC; retained only the BIE byte mapping
+  in the BIE specification.
 - Kept FireTrac only as possible source-environment context; it is not BIE
   format provenance.
 

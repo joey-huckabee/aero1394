@@ -37,23 +37,26 @@ date without a confirmed epoch.
 One decoded BIE record maps to one row. The proposed header is:
 
 ```csv
-TIME_STAMP,DELTA,RECORD_INDEX,DATA_ITEM_ID,DATA_ITEM_NAME,RECORD_STATUS,DATA_LENGTH,PROTOCOL_WORD1,PROTOCOL_WORD2,SYSTEM_TICKS,SYSTEM_TIME_SECONDS,PAYLOAD_STATUS,FLOAT01,FLOAT02,FLOAT03,FLOAT04,FLOAT05,FLOAT06,FLOAT07,FLOAT08,FLOAT09,FLOAT10,FLOAT11,FLOAT12,FLOAT13,FLOAT14,FLOAT15,FLOAT16,FLOAT17,FLOAT18,FLOAT19,FLOAT20,STOF_TX,STOF_RX,STOF_DATAPUMP,VPC,VPC_VALID
+TIME_STAMP,DELTA,RECORD_INDEX,DATA_ITEM_ID,DATA_ITEM_NAME,RECORD_STATUS,DATA_LENGTH,AS5643_PROFILE,AS5643_ASSUMPTION_DEPENDENT,HEALTH_STATUS,HEARTBEAT,SYSTEM_TICKS,SYSTEM_TIME_SECONDS,PAYLOAD_STATUS,FLOAT01,FLOAT02,FLOAT03,FLOAT04,FLOAT05,FLOAT06,FLOAT07,FLOAT08,FLOAT09,FLOAT10,FLOAT11,FLOAT12,FLOAT13,FLOAT14,FLOAT15,FLOAT16,FLOAT17,FLOAT18,FLOAT19,FLOAT20,STOF_TX,STOF_RX,STOF_DATAPUMP,VPC,VPC_VALID
 ```
 
-`PROTOCOL_WORD1` and `PROTOCOL_WORD2` deliberately replace the earlier
-`AS5643_WORD1` and `AS5643_WORD2` suggestion until their protocol ownership is
-proved. `PAYLOAD_STATUS` and `FLOAT01..20` are placeholders that must be
-replaced by the supplied payload field names before the schema becomes stable.
+`HEALTH_STATUS`, `HEARTBEAT`, the STOF fields, and `VPC` use the provisional
+AS5643 profile defined in [`AS5643.md`](AS5643.md). `PAYLOAD_STATUS` and
+`FLOAT01..20` are placeholders that must be replaced by the supplied payload
+field names before the schema becomes stable. `AS5643_PROFILE` identifies the
+selected interpretation, and `AS5643_ASSUMPTION_DEPENDENT` is true whenever
+that interpretation uses working assumptions rather than an authoritative
+network profile.
 
 An approximate row from the populated fixture is:
 
 ```csv
-2024-07-31T13:05:46.333129Z,,876,00005D04,msfcs_storesmassdata_b,00000000,116,00000000,049CC304,40570612356019,,01000000,5603.02002,490.0,1.0,70.0,35082.0,1214.0,36115.0,37.0,5.0,105.0,1488.02002,502.0,4.0,81.0,10065.0,248.0,10282.0,23.0,-8.0,40.0,1400,500,500,158E7E3B,
+2024-07-31T13:05:46.333129Z,,876,00005D04,msfcs_storesmassdata_b,00000000,116,aero1394-assumed-as5643b-v1,true,00000000,049CC304,40570612356019,,01000000,5603.02002,490.0,1.0,70.0,35082.0,1214.0,36115.0,37.0,5.0,105.0,1488.02002,502.0,4.0,81.0,10065.0,248.0,10282.0,23.0,-8.0,40.0,1400,500,500,158E7E3B,true
 ```
 
-`VPC_VALID` is empty because the observed XOR residual is strong evidence but
-the normative omitted-header inputs are not yet established. It must not be
-reported as true merely because a provisional calculation matches.
+`VPC_VALID` is true under the selected provisional profile. The canonical
+validation result must additionally retain `assumption_dependent = true`, the
+reconstructed ASM-header inputs, and the selected profile identifier.
 
 Human-facing hexadecimal fields use eight uppercase digits. `DELTA` is elapsed
 recorder seconds since the previous matching record. `SYSTEM_TIME_SECONDS` is
@@ -75,8 +78,10 @@ message aero1394_record {
     required int64  record_status;
     required int32  data_length;
 
-    required int64  protocol_word1;
-    required int64  protocol_word2;
+    required binary as5643_profile (STRING);
+    required boolean as5643_assumption_dependent;
+    required int64  health_status;
+    required int64  heartbeat;
 
     required int64  system_ticks;
     optional double system_time_seconds;
