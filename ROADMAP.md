@@ -18,21 +18,19 @@ before implementation begins.
 The bounded scope and exit gates for the first implementation release are
 defined in [`docs/RELEASE-PLAN.md`](docs/RELEASE-PLAN.md).
 
-### Expose BIE record inventory in the CLI
+### Harden the `v0.1.0` release
 
-Build a human-readable `records` command on the strict BIE parser without
-adding protocol interpretation. For every record, display:
+Complete the final release-plan increment:
 
-- record index and absolute offset;
-- data-item ID;
-- raw recorder seconds and microseconds;
-- raw status/length and unresolved flags; and
-- stored-data length.
+- replace the `records` command's whole-file buffer with bounded streaming or
+  enforce an evidence-backed resource limit;
+- build with `--release --locked` on Windows and Linux;
+- package the CLI, license, readme, release notes, and SHA-256 checksums;
+- smoke-test packaged binaries; and
+- tag only the clean, CI-passing release commit.
 
-Malformed input must use the strict library error and produce a nonzero exit
-status. Exit gate: success, truncation, missing-terminator, and trailing-data
-paths have CLI integration tests using synthetic or sanitized inputs; offset
-overflow remains covered at the library boundary.
+Exit gate: every functional, verification, documentation, and packaging item
+in [`docs/RELEASE-PLAN.md`](docs/RELEASE-PLAN.md) is satisfied.
 
 ### Resolve BIE status flag `0x40000000`
 

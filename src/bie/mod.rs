@@ -278,11 +278,18 @@ impl fmt::Display for BieFileParseError {
             Self::TrailingData {
                 offset,
                 trailing_bytes,
-            } => write!(
-                formatter,
-                "{trailing_bytes} trailing bytes after BIE terminator at 0x{:016x}",
-                offset.get()
-            ),
+            } => {
+                let unit = if *trailing_bytes == 1 {
+                    "byte"
+                } else {
+                    "bytes"
+                };
+                write!(
+                    formatter,
+                    "{trailing_bytes} trailing {unit} after BIE terminator at 0x{:016x}",
+                    offset.get()
+                )
+            }
             Self::OffsetOverflow { offset, byte_count } => write!(
                 formatter,
                 "BIE file offset overflow advancing {byte_count} bytes from 0x{:016x}",

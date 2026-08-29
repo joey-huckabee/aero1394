@@ -2,6 +2,7 @@
 
 #![forbid(unsafe_code)]
 
+use aero1394::bie::{BieFile, BieFileParseError, parse_file};
 use aero1394::forensic::{
     FileOffset, Hexdump, HexdumpConfig, HexdumpConfigError, HexdumpError, HexdumpLine,
     MAX_BYTES_PER_LINE,
@@ -10,7 +11,7 @@ use std::env;
 use std::error::Error;
 use std::ffi::{OsStr, OsString};
 use std::fmt;
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::{self, BufWriter, Seek, SeekFrom, Write};
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -26,12 +27,13 @@ Usage:
 
 Commands:
   hexdump    Display uninterpreted bytes with absolute file offsets
+  records    List structurally parsed BIE records
 
 Options:
   -h, --help       Show this help
   -V, --version    Show the program version
 
-Run 'aero1394 hexdump --help' for command options.
+Run 'aero1394 <COMMAND> --help' for command options.
 ";
 
 const HEXDUMP_HELP: &str = "\
@@ -52,6 +54,22 @@ Options:
 Byte counts accept decimal or a 0x-prefixed hexadecimal value. Underscores are
 allowed as digit separators. Use '--length all' deliberately for an entire
 file; output is otherwise bounded to 256 bytes by default.
+";
+
+const RECORDS_HELP: &str = "\
+List structurally parsed BIE records
+
+Usage:
+  aero1394 records <FILE>
+
+Arguments:
+  <FILE>                 Complete BIE file to inspect
+
+Options:
+  -h, --help             Show this help
+
+The file must end at its four-byte zero terminator. Output preserves BIE
+container values and does not imply IEEE-1394, AS5643, or payload decoding.
 ";
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -77,12 +95,18 @@ struct HexdumpArgs {
     width: usize,
 }
 
+#[derive(Debug, Eq, PartialEq)]
+struct RecordsArgs {
+    path: PathBuf,
+}
+
 #[derive(Debug)]
 enum AppError {
     Usage(String),
     Operation(String),
     Io { context: String, source: io::Error },
     Hexdump(HexdumpError),
+    Bie(BieFileParseError),
 }
 
 impl AppError {
@@ -110,6 +134,7 @@ impl fmt::Display for AppError {
             Self::Usage(message) | Self::Operation(message) => formatter.write_str(message),
             Self::Io { context, source } => write!(formatter, "{context}: {source}"),
             Self::Hexdump(error) => error.fmt(formatter),
+            Self::Bie(error) => error.fmt(formatter),
         }
     }
 }
@@ -119,6 +144,7 @@ impl Error for AppError {
         match self {
             Self::Io { source, .. } => Some(source),
             Self::Hexdump(error) => Some(error),
+            Self::Bie(error) => Some(error),
             Self::Usage(_) | Self::Operation(_) => None,
         }
     }
@@ -136,12 +162,18 @@ impl From<HexdumpConfigError> for AppError {
     }
 }
 
+impl From<BieFileParseError> for AppError {
+    fn from(error: BieFileParseError) -> Self {
+        Self::Bie(error)
+    }
+}
+
 fn main() -> ExitCode {
     match run() {
         Ok(()) => ExitCode::SUCCESS,
         Err(error) if error.is_broken_pipe() => ExitCode::SUCCESS,
         Err(AppError::Usage(message)) => {
-            eprintln!("error: {message}\n\nTry 'aero1394 hexdump --help' for usage.");
+            eprintln!("error: {message}\n\nTry 'aero1394 --help' for usage.");
             ExitCode::from(2)
         }
         Err(error) => {
@@ -163,17 +195,24 @@ fn run() -> Result<(), AppError> {
     if command == "-V" || command == "--version" {
         return write_stdout(&format!("aero1394 {}\n", env!("CARGO_PKG_VERSION")));
     }
-    if command != "hexdump" {
-        return Err(AppError::Usage(format!(
-            "unknown command '{}'",
-            command.to_string_lossy()
-        )));
+    if command == "hexdump" {
+        let Some(arguments) = parse_hexdump_args(arguments)? else {
+            return write_stdout(HEXDUMP_HELP);
+        };
+        return execute_hexdump(&arguments);
     }
 
-    let Some(arguments) = parse_hexdump_args(arguments)? else {
-        return write_stdout(HEXDUMP_HELP);
-    };
-    execute_hexdump(&arguments)
+    if command == "records" {
+        let Some(arguments) = parse_records_args(arguments)? else {
+            return write_stdout(RECORDS_HELP);
+        };
+        return execute_records(&arguments);
+    }
+
+    Err(AppError::Usage(format!(
+        "unknown command '{}'",
+        command.to_string_lossy()
+    )))
 }
 
 fn parse_hexdump_args(
@@ -255,6 +294,38 @@ fn parse_hexdump_args(
         length: length.unwrap_or(ByteLimit::Bounded(DEFAULT_LENGTH)),
         width: width.unwrap_or(DEFAULT_WIDTH),
     }))
+}
+
+fn parse_records_args(
+    arguments: impl IntoIterator<Item = OsString>,
+) -> Result<Option<RecordsArgs>, AppError> {
+    let mut path = None;
+    let mut positional_only = false;
+
+    for argument in arguments {
+        if !positional_only && (argument == "-h" || argument == "--help") {
+            return Ok(None);
+        }
+        if !positional_only && argument == "--" {
+            positional_only = true;
+            continue;
+        }
+        if !positional_only && argument.to_string_lossy().starts_with('-') {
+            return Err(AppError::Usage(format!(
+                "unknown records option '{}'",
+                argument.to_string_lossy()
+            )));
+        }
+        if path.replace(PathBuf::from(&argument)).is_some() {
+            return Err(AppError::Usage(format!(
+                "unexpected extra file argument '{}'",
+                argument.to_string_lossy()
+            )));
+        }
+    }
+
+    let path = path.ok_or_else(|| AppError::Usage("missing required <FILE> argument".into()))?;
+    Ok(Some(RecordsArgs { path }))
 }
 
 fn ensure_not_set(is_set: bool, option: &str) -> Result<(), AppError> {
@@ -369,6 +440,46 @@ fn execute_hexdump(arguments: &HexdumpArgs) -> Result<(), AppError> {
         .map_err(|error| AppError::io("could not flush hex dump", error))
 }
 
+fn execute_records(arguments: &RecordsArgs) -> Result<(), AppError> {
+    let bytes = fs::read(&arguments.path).map_err(|error| {
+        AppError::io(
+            format!("could not read '{}'", arguments.path.display()),
+            error,
+        )
+    })?;
+    let file = parse_file(&bytes, FileOffset::new(0))?;
+    let stdout = io::stdout();
+    let mut output = BufWriter::new(stdout.lock());
+
+    render_records(&mut output, &file)
+        .map_err(|error| AppError::io("could not write BIE record inventory", error))?;
+    output
+        .flush()
+        .map_err(|error| AppError::io("could not flush BIE record inventory", error))
+}
+
+fn render_records(output: &mut impl Write, file: &BieFile<'_>) -> io::Result<()> {
+    for (index, record) in file.records().iter().enumerate() {
+        writeln!(
+            output,
+            "record={index} offset=0x{:016X} data_item_id=0x{:08X} recorder_seconds={} recorder_microseconds={} status_and_length=0x{:08X} unresolved_flags=0x{:08X} data_length={}",
+            record.file_offset().get(),
+            record.data_item_id().get(),
+            record.recorder_time().seconds(),
+            record.recorder_time().microseconds(),
+            record.status_and_length().raw(),
+            record.status_and_length().unresolved_flags(),
+            record.status_and_length().data_length(),
+        )?;
+    }
+    writeln!(
+        output,
+        "terminator_offset=0x{:016X} records={}",
+        file.terminator_offset().get(),
+        file.records().len()
+    )
+}
+
 fn render_line(
     output: &mut impl Write,
     line: &HexdumpLine,
@@ -459,6 +570,45 @@ mod tests {
             .expect_err("duplicate option must fail");
 
         assert!(error.to_string().contains("only be specified once"));
+    }
+
+    #[test]
+    fn parses_a_records_file_path_after_the_option_terminator() {
+        let arguments = parse_records_args([os("--"), os("-capture.bie")])
+            .expect("arguments are valid")
+            .expect("help was not requested");
+
+        assert_eq!(
+            arguments,
+            RecordsArgs {
+                path: PathBuf::from("-capture.bie"),
+            }
+        );
+    }
+
+    #[test]
+    fn rejects_records_options() {
+        let error = parse_records_args([os("--offset"), os("4"), os("capture.bie")])
+            .expect_err("records has no offset option");
+
+        assert!(error.to_string().contains("unknown records option"));
+    }
+
+    /// Requirements: L3-OUT-001, L3-OUT-002, L3-OUT-006
+    #[test]
+    fn renders_raw_bie_record_inventory_values() {
+        let bytes = [
+            0xDE, 0xAD, 0xBE, 0xEF, 0, 0, 0, 10, 0, 0, 0, 20, 0x40, 0, 0, 1, 0xAA, 0, 0, 0, 0,
+        ];
+        let file = parse_file(&bytes, FileOffset::new(0x100)).expect("test BIE parses");
+        let mut output = Vec::new();
+
+        render_records(&mut output, &file).expect("write succeeds");
+
+        assert_eq!(
+            String::from_utf8(output).expect("ASCII output"),
+            "record=0 offset=0x0000000000000100 data_item_id=0xDEADBEEF recorder_seconds=10 recorder_microseconds=20 status_and_length=0x40000001 unresolved_flags=0x40000000 data_length=1\nterminator_offset=0x0000000000000111 records=1\n"
+        );
     }
 
     #[test]

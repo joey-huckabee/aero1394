@@ -17,11 +17,12 @@ family. The library now safely parses one complete non-terminator BIE record
 or a strict complete BIE byte slice while preserving raw values, absolute
 offsets, and exact stored data. Whole-file parsing requires the four-byte zero
 sentinel and reports truncation, a missing terminator, or trailing bytes.
-Protocol decoding remains unimplemented.
+The `records` CLI lists those raw BIE fields without assigning protocol
+semantics. Protocol decoding remains unimplemented.
 
-The next increment is a human-readable BIE record inventory CLI backed by the
-same library parser and exercised by the sanitized golden messages under
-`tests/fixtures/bie`.
+The next increment is `v0.1.0` release hardening, including bounded processing
+for large record inventories, cross-platform release builds, packaging, and
+smoke tests.
 
 The scoped gates and incremental path for the first pre-`1.0.0` release are in
 the [`v0.1.0` release plan](docs/RELEASE-PLAN.md).
@@ -52,10 +53,23 @@ cargo run --release -- hexdump path/to/capture.bie --width 32
 cargo run --release -- hexdump path/to/capture.bie --length all > capture.hexdump.txt
 ```
 
-Each line contains a 16-digit absolute file offset, hexadecimal bytes, and an
-ASCII preview. The default 256-byte limit prevents an accidental terminal dump
-of a large recording. Hex-dump output contains source bytes and must be handled
-with the same sensitivity as the capture.
+List the raw container fields for every record in a complete BIE file:
+
+```text
+cargo run --release -- records path/to/capture.bie
+```
+
+The inventory reports the record index, absolute offset, BIE data-item ID, raw
+recorder timestamp fields, raw status/length word, unresolved flags, and body
+length. It does not label the BIE ID as an AS5643 Message ID or decode stored
+data. The current command validates the complete file in memory before writing
+output; bounded streaming is a `v0.1.0` release-hardening gate for large
+captures.
+
+Each hex-dump line contains a 16-digit absolute file offset, hexadecimal bytes,
+and an ASCII preview. The default 256-byte limit prevents an accidental
+terminal dump of a large recording. Hex-dump output contains source bytes and
+must be handled with the same sensitivity as the capture.
 
 See [Reverse-engineering BIE captures](docs/REVERSE-ENGINEERING.md) for the
 evidence workflow and [current architecture](docs/ARCHITECTURE.md) for the

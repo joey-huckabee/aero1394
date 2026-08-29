@@ -51,12 +51,21 @@ contracts, not claims about `v0.1.0` runtime behavior.
 | --- | --- | --- | --- |
 | 1. Record framing | Parse one complete non-terminator record without copying its stored data. | Unit boundaries and known-good startup fixture; commit `5b8f0c9`. | Complete |
 | 2. File framing | Parse a strict complete BIE slice through its sentinel. | Multi-record, empty, end-fixture, truncation, missing-terminator, trailing-data, and overflow tests. | Complete |
-| 3. Record inventory CLI | List record number, offset, ID, recorder time, raw status, flags, and body length. | CLI success/error integration tests using sanitized fixtures. | Planned |
-| 4. Release hardening | Make the documented commands and distributable binaries reproducible. | Exact CI checks, release builds on Windows and Linux, CLI help review, release notes, and packaged-artifact smoke tests. | Planned |
+| 3. Record inventory CLI | List record number, offset, ID, recorder time, raw status, flags, and body length. | CLI success/error integration tests using sanitized fixtures. | Complete |
+| 4. Release hardening | Make large-input behavior and distributable binaries reproducible. | Bounded streaming or an evidence-backed input limit, exact CI checks, release builds on Windows and Linux, CLI help review, release notes, and packaged-artifact smoke tests. | In progress |
 
 Each increment must remain independently functional and receive its own
 reviewable commit. Protocol interpretation will begin only after this release
 gate or a separately documented scope decision.
+
+Current hardening evidence:
+
+- [x] Locked Windows release build succeeds with Rust 1.98.0.
+- [x] The Windows release binary passes `--version` and `records --help` smoke
+  checks.
+- [ ] Bounded large-capture inventory behavior is implemented.
+- [ ] The locked Linux release build and packaged-binary smoke test pass in CI.
+- [ ] Release notes, archives, and SHA-256 checksums are generated.
 
 ## Release gates
 

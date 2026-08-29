@@ -1,6 +1,6 @@
 # Aero1394 architecture
 
-- Status: Stage 1 and strict BIE framing implemented; Stage 2 evidence-limited
+- Status: Strict BIE framing and record-inventory CLI implemented; release hardening pending
 - Last updated: 2026-08-29
 
 ## Current vertical slice
@@ -19,6 +19,8 @@ Library: forensic::Hexdump -> HexdumpLine { absolute offset, raw bytes }
                          std::io::Read
 
 Library: &[u8] + FileOffset -> bie::parse_file -> BieFile { borrowed records }
+
+CLI: records path -> read bytes -> bie::parse_file -> raw BIE text inventory
 ```
 
 The `forensic` module is format-neutral. It does not identify a source as BIE,
@@ -37,6 +39,12 @@ The CLI owns filesystem behavior because opening a path, checking its size,
 seeking, writing terminal output, and choosing process exit codes are adapter
 concerns. The library can therefore be reused with memory buffers, extracted
 Chapter 10 payloads, or another storage adapter without invoking a process.
+
+The initial `records` adapter reads and validates a complete file before it
+writes any inventory lines, so malformed inputs do not produce a partial
+listing. This whole-file allocation is not the final large-capture strategy;
+bounded streaming or an evidence-backed resource limit is a `v0.1.0` release
+gate in [`RELEASE-PLAN.md`](RELEASE-PLAN.md).
 
 The `bie` module parses either one non-terminator record or a strict complete
 file from a byte slice. It derives body boundaries from encoded low-16-bit
