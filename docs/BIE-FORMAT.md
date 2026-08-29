@@ -7,19 +7,11 @@
 ## Purpose
 
 This document is the definitive format specification and parser contract for
-the internal BIE capture format. It defines the supported file and record
-grammar, required parser behavior, recognition rules, stored-data boundary,
-and compatibility constraints. Unresolved fields are explicitly preserved
-without assigning unsupported meanings.
-
-Capture provenance, environment context, and chronological research notes are
-maintained separately in [`BIE-EVIDENCE.md`](BIE-EVIDENCE.md). That development
-record supports this specification but is not part of the format contract.
-
-BIE is an internally defined format, not a DAP Technology, FireSpy, or FireTrac
-format. Candidate support for other input containers belongs in the
-forward-looking
-[`ROADMAP.md`](../ROADMAP.md), not in this format definition.
+BIE, an internally defined capture format that is not a DAP Technology,
+FireSpy, or FireTrac format. It defines the supported file and record grammar,
+required parser behavior, recognition rules, stored-data boundary, and
+compatibility constraints. Unresolved fields are explicitly preserved without
+assigning unsupported meanings.
 
 The grammar and parser requirements below are normative for the currently
 supported BIE format unless a field is explicitly marked with one of these
@@ -64,13 +56,13 @@ bytes.
 
 ## Record header
 
-| Offset | Width | Interpretation | Evidence |
-| ---: | ---: | --- | --- |
-| `0x00` | 4 | Nonzero data-item ID | **Confirmed** by exact match with recorder summary metadata |
-| `0x04` | 4 | Unsigned Unix seconds, big-endian | **Confirmed** by recording date and time correlation |
-| `0x08` | 4 | Microseconds within the second, big-endian | **Confirmed** by time correlation |
-| `0x0C` | 4 | Raw status/length word | **Confirmed** structurally; `0x40000000` **needs resolution** |
-| `0x10` | N | Stored data, where `N` is the low 16-bit length | **Confirmed** for supplied records |
+| Offset | Width (bytes) | Description |
+| ---: | ---: | --- |
+| `0x00` | 4 | Nonzero data-item identifier encoded as a big-endian unsigned 32-bit integer. |
+| `0x04` | 4 | Whole seconds of the recorder timestamp, encoded as big-endian unsigned Unix seconds. |
+| `0x08` | 4 | Microsecond component of the recorder timestamp, encoded as a big-endian unsigned 32-bit integer. |
+| `0x0C` | 4 | Raw big-endian status/length word. The low 16 bits contain `data_length`; the high 16 bits contain `unresolved_flags`. |
+| `0x10` | N | Stored-data bytes, where `N` is exactly the `data_length` declared by the preceding status/length word. |
 
 ### Status and length word
 
