@@ -1,14 +1,15 @@
-# BIE binary format research
+# BIE binary format
 
-- Status: Discovery; representative simulation excerpts have been correlated with recorder summary metadata
+- Status: Observed `BIE_LINUX` variant is implementation-ready; producer provenance and unobserved variants remain unresolved
 - Last updated: 2026-08-28
 - Applies to: the `.bie` aerospace IEEE-1394 recordings expected by Aero1394
 
 ## Purpose
 
-This document is the evidence ledger for the BIE capture container. It records
-what is known, what has only been inferred, what has been ruled out, and what
-must be learned before implementing a production parser.
+This document is the evidence ledger and parser contract for the BIE capture
+container. It records what is known, what has only been inferred, what has
+been ruled out, what Aero1394 supports now, and what evidence is required to
+add another variant.
 
 The verified subset is described at byte level below. Protocol names remain
 provisional where the observed layout has not yet been checked against an
@@ -22,6 +23,7 @@ Evidence labels used below are:
 | Inferred | A conclusion drawn from confirmed behavior, but not a documented byte layout |
 | Hypothesis | Plausible and worth testing against a sample |
 | Unknown | No adequate evidence yet |
+| Not established | Available evidence does not justify using the claim as an assumption |
 
 ## Critical research finding
 
@@ -42,9 +44,9 @@ now visible in the supplied simulation excerpts:
 | --- | --- | --- |
 | The target files use the `.bie` extension | Confirmed by supplied summary metadata | The complete capture is not committed; sanitized hex fixtures preserve selected records |
 | The target files were produced by `BIE_LINUX` hardware/software | Confirmed by supplied summary metadata | This does not establish that BIE is a FireSpy-native format |
-| The target files were produced by FireSpy | Hypothesis | DAP documentation uses `.fsr` for FireSpy recordings |
-| `.bie` is a legacy or internal DAP format | Unknown | No public DAP reference was found |
-| `.bie` is a renamed `.fsr`, `.rgn`, `.fsp`, or Chapter 10 file | Hypothesis | Must be tested by signature and contents, never by extension alone |
+| The target files were produced by FireSpy | Not established | DAP documentation uses `.fsr` for FireSpy recordings |
+| `.bie` is a legacy or internal DAP format | Not established | No public DAP reference was found |
+| `.bie` is a renamed `.fsr`, `.rgn`, `.fsp`, or Chapter 10 file | Not established | The documented `.fsp`, `.rgn`, and Chapter 10 signatures do not describe the observed record chain; no public `.fsr` signature is available |
 | `.bie` contains an AS5643-derived stored region | Inferred | Length geometry, STOF-like trailer values, and VPC behavior agree across supplied records |
 
 ## Supplied capture evidence
@@ -80,12 +82,32 @@ inputs under [`tests/fixtures/bie`](../tests/fixtures/bie/README.md). They are
 evidence for the observed record family, not permission to generalize every
 `.bie` producer or record type.
 
+### Scope and closure decision
+
+Aero1394 will name and support this structure as the **observed `BIE_LINUX`
+variant**. That is an internal compatibility label, not a claim that all
+`.bie` files share this layout or that `BIE_LINUX` is a DAP or FireSpy product
+name.
+
+The format is sufficiently closed for implementation because every byte in
+the supplied records and end-of-file boundary has a structural disposition,
+and the parser behavior for unsupported semantics is explicit. Completion of
+this contract does not require guessing the producer, naming the upper status
+bits, or decoding the stored data at the container layer. New evidence may
+extend this contract, but must not silently change the meaning of already
+supported bytes.
+
 The negative search result does not prove that no BIE specification exists.
 It may be available only in a serial-number-gated download, SDK, support
 document, contract data package, older product release, or another vendor's
 documentation. DAP offers a demo FireDiagnostics download through a request
 form and product downloads through a FireSpy serial-number page
 ([DAP-DOWNLOAD]).
+
+DAP also documents Linux support for FireTrac and advertises customized
+FireTrac-based data-recorder applications ([DAP-FIRETRAC]). That makes a custom
+Linux recorder built on DAP interfaces plausible, but it does not identify
+`BIE_LINUX`, establish FireSpy provenance, or define the `.bie` bytes.
 
 ## DAP FireSpy recording findings
 
@@ -294,7 +316,7 @@ Use content to test and rule out these alternatives:
 | Candidate | Identification evidence | Interpretation |
 | --- | --- | --- |
 | DAP `.fsp` v1.0.0 | Starts `AE 46 53 70 00 01 00 00` | Documented packet export, not native recording |
-| DAP `.rgn` v1 | Logical file ID `0xAE52476E`; byte order still to verify | Documented regeneration export |
+| DAP `.rgn` v1 | Logical file ID `0xAE52476E`; public manual does not specify byte order | Documented regeneration export |
 | DAP `.fsr` | No public signature located | Native FireSpy recording according to DAP |
 | IRIG 106 Chapter 10 | Standard Chapter 10 synchronization/header followed by data types such as `0x58` or `0x59` | Standardized recorder container, not proof of BIE |
 | JBIG T.82 BIE | A T.82-conforming bi-level image header and data stream | Unrelated image meaning of BIE |
@@ -308,10 +330,11 @@ target files.
 
 ### File and record grammar
 
-The observed file is a sequence of big-endian, length-delimited records ending
-in a zero word. The zero word is a **strong inference** for an EOF sentinel: it
-occurs exactly where another nonzero data-item ID would begin, but confirmation
-from another complete file or producer documentation is still required.
+The supported observed variant is a sequence of big-endian, length-delimited
+records ending in a zero word. The zero word is treated as an EOF sentinel
+because it occurs exactly where another nonzero data-item ID would begin and
+the supplied final offsets end immediately after it. Whether every producer
+uses that sentinel remains unknown and is not generalized beyond this variant.
 
 ```text
 file := record* zero_word
@@ -332,6 +355,11 @@ The decoder must not make 132 bytes a universal record size. That size follows
 only for the supplied record family because its stored-data length is `0x0074`,
 or 116 bytes.
 
+No separate magic, version header, metadata table, or index is represented in
+the supported grammar. Because the complete source file is not committed, this
+is a parser boundary derived from the supplied record and EOF geometry rather
+than a universal claim that such structures never occur in other variants.
+
 ### Observed record header
 
 | Offset | Width | Interpretation | Evidence |
@@ -347,6 +375,15 @@ The observed status/length words are `0x00000074` and `0x40000074`.
 record. The meaning of `0x40000000` is unknown. Its similarity to an IRIG 106
 IEEE-1394 Format 1 status/length word remains a comparison lead, not proof that
 the BIE record is a Chapter 10 intra-packet.
+
+IRIG 106 Format 1 combines a 16-bit data length with separate IEEE-1394 status
+and transfer fields ([IRIG106-HB-1394]). A common IEEE-1394 PHY also defines an
+eight-bit bus-status transfer with reset, cycle-start, and gap indications
+([TI-TSB41BA3]). Neither source establishes that this recorder copied those
+fields, nor how it would place their bits in the BIE word. Consequently,
+`0x40000000` has no defensible event name. The parser exposes
+`data_length = raw & 0x0000_FFFF` and
+`opaque_flags = raw & 0xFFFF_0000`, while preserving the complete raw word.
 
 The first supplied record contains:
 
@@ -366,6 +403,51 @@ If it is an unsigned Unix counter, it wraps after
 unwanted 2038 limit. Raw seconds and microseconds remain part of the decoded
 model even when a calendar representation is available.
 
+### Supported parser contract
+
+For the observed variant, parsing and validation use these rules:
+
+- Decode each header word as big-endian and use checked arithmetic for every
+  offset and `16 + data_length` calculation.
+- Interpret a zero data-item ID at a record boundary as the four-byte
+  terminator. The supported clean form ends immediately after it; report any
+  following bytes as trailing data.
+- Report physical EOF in a header or declared body as truncation. Report EOF
+  exactly at a record boundary without the zero word as a missing terminator.
+- Accept any nonzero data-item ID and any low-16-bit stored-data length,
+  including zero, structurally. Payload support, a known ID, and the observed
+  116-byte size are not container-validity requirements.
+- Preserve the absolute record offset, all four raw header words, and the exact
+  stored-data bytes. Unknown IDs and upper flags remain inspectable.
+- Parse recorder seconds and microseconds as raw `u32` values. Validation flags
+  microseconds greater than `999999`; timestamp monotonicity is an optional
+  sequence check, not a framing requirement.
+- Accept the four-byte sentinel-only form as the supported structural empty
+  representation for synthetic and defensive tests. No supplied producer-made
+  empty file confirms that convention.
+
+The maximum body length expressible by the observed length field is 65,535
+bytes, so the maximum structurally representable record is 65,551 bytes. A
+caller may impose a smaller resource policy without changing the wire grammar.
+
+### Recognition and failure classification
+
+The `.bie` extension alone never selects this parser. Automatic recognition of
+the observed variant requires at least one complete record and a complete chain
+from absolute offset zero to a terminal zero word, with every declared body
+fitting inside the input. The sentinel-only empty form requires explicit format
+selection. Valid microsecond values and plausible timestamps increase
+confidence but are not substitutes for structural chaining.
+
+When the caller explicitly selects this adapter, an incomplete chain is a
+malformed observed-variant candidate and receives the precise missing-header,
+missing-body, missing-terminator, overflow, or trailing-data diagnostic. During
+automatic detection, bytes that cannot establish the record chain are
+unrecognized rather than proof of a new BIE variant. A documented signature
+for `.fsp`, `.rgn`, Chapter 10, or another format takes precedence over a
+coincidental record-like pattern. Native `.fsr` cannot yet be signature-tested
+from public documentation.
+
 ### Stored-data boundary
 
 At the BIE layer, the declared stored-data region is opaque. Its internal
@@ -378,20 +460,27 @@ The currently observed downstream-protocol evidence is kept in
 [`AS5643.md`](AS5643.md), and application definitions are kept in
 [`PAYLOADS.md`](PAYLOADS.md). Both are isolated from the generic BIE grammar.
 
-### Remaining unknowns
+The BIE container defines no production or recorder cadence and no scheduling
+relationship between them. Payload production timing is documented in
+[`PAYLOADS.md`](PAYLOADS.md); recorder and protocol timing evidence is
+documented separately in [`AS5643.md`](AS5643.md).
 
-- whether the zero word is required by every producer and whether bytes may
-  legally follow it;
-- whether `data_length` always occupies the low 16 bits and what every upper
-  status bit means;
-- other data-item sizes, IDs, record kinds, and empty-recording behavior;
-- recorder/version metadata, bus/node/channel provenance, and file indexing;
-- which downstream protocol or application definition applies to stored data;
-- behavior for corrupt, prefix-only, acknowledge-only, reset, or event records;
-  and
-- whether the format varies across `BIE_LINUX` versions or hardware.
+### Closed questions and compatibility limits
 
-## Additional capture evidence required
+The earlier open semantic questions now have explicit implementation
+dispositions; none blocks the observed-variant parser:
+
+| Question | Current answer and parser policy | Evidence that would reopen it |
+| --- | --- | --- |
+| Is the zero word universal, and may bytes follow it? | It is required for the supported variant; following bytes are reported. Universality is not claimed. | A complete capture or producer specification showing another termination rule |
+| Is the low 16-bit length universal, and what do upper bits mean? | The low 16 bits define length only for this variant. Upper bits are opaque and losslessly preserved; observed values are `0` and `0x40000000`. | Producer field definitions or controlled records that independently identify each flag |
+| Are other lengths, IDs, record kinds, or empty files valid? | All nonzero IDs and all encoded lengths are structurally accepted. Unknown contents stay raw. Sentinel-only input is accepted as an evidence-limited empty form. | Captures exercising additional IDs, lengths, event records, or a producer-made empty file |
+| Where are recorder version, bus/node/channel metadata, and indexes? | They are absent from the supported grammar and must come from provenance supplied alongside the file. The parser does not fabricate them. | A variant containing a header, side table, index, or typed metadata record |
+| Which protocol or application definition applies? | The BIE layer does not decide. It returns opaque stored data to the IEEE-1394/AS5643 and payload layers. | Protocol evidence changes those downstream adapters, not this container grammar |
+| What are corrupt, prefix-only, acknowledge-only, reset, and event records? | Container framing remains generic; unrecognized record contents stay raw. Semantic classification is unsupported until evidenced, and recovery remains caller policy. | Controlled captures or an authoritative event-record definition |
+| Does the format vary by producer version or hardware? | Possibly, but externally unresolved. With no version marker, Aero1394 claims compatibility only with the observed structure and rejects or reports non-chaining inputs. | Independently sourced files with producer/version metadata |
+
+## Evidence required to add another variant
 
 For the next complete sample, preserve the original file and record:
 
@@ -421,7 +510,10 @@ different payload lengths, a bus reset, an acknowledge-only event, a
 prefix-only observation, an intentionally bad CRC, a STOF plus one ASM, and
 traffic on more than one analyzer node.
 
-## Questions for DAP Technology or the actual recorder vendor
+## Optional provenance and compatibility questions
+
+These questions would identify the producer or support more variants, but their
+answers are not prerequisites for implementing the observed-variant contract:
 
 1. Does any released or legacy DAP product create or read files with a `.bie`
    extension? If so, which product and versions?
@@ -446,7 +538,7 @@ DAP lists support contacts and warns customers not to send CUI or ITAR data
 without advance approval and use of its secure upload process ([DAP-SUPPORT];
 [DAP-CONTACT]). Do not attach a real capture to an ordinary support email.
 
-## Parser constraints while provenance and variants remain unresolved
+## Compatibility constraints
 
 - Do not identify a format solely from `.bie` or any other extension.
 - Do not use `.fsr`, `.fsp`, or `.rgn` structures as BIE structures without a
@@ -493,6 +585,18 @@ name in the API.
 - Separated IEEE-1394 comparison constraints, AS5643-derived evidence, and
   application definitions into `docs/IEEE1394.md`, `docs/AS5643.md`, and
   `docs/PAYLOADS.md` respectively.
+- Closed the observed-variant parser contract: sentinel handling, length and
+  status preservation, empty/truncated/trailing input, unknown IDs, timestamp
+  validation, and recognition now have explicit dispositions.
+- Re-ran exact public-web and public-source-index searches for `BIE_LINUX` and
+  the recorder-summary phrases without locating a format definition or public
+  implementation.
+- Confirmed that DAP advertises Linux and custom data-recorder support for
+  FireTrac, but found no source connecting that product to `BIE_LINUX` or the
+  `.bie` layout.
+- Compared the upper status bit with official IRIG 106 IEEE-1394 Format 1 and
+  IEEE-1394 PHY bus-status definitions. Neither comparison can identify
+  `0x40000000`, so it remains opaque by design.
 
 ### 2026-08-27
 
@@ -516,6 +620,7 @@ name in the API.
 - **DAP-OM** — [1394 Analyzer Operation Manual, DAP Technology, dated
   2017-09-01](https://www.daptechnology.com/fileadmin/manuals/OperationManual.pdf)
 - **DAP-API** — [FireSuite API product page](https://www.daptechnology.com/products/software/firediagnostics-suite/firesuite-api)
+- **DAP-FIRETRAC** — [FireTrac Mil1394 product page](https://www.daptechnology.com/products/interface-solutions/firetrac-mil1394)
 - **DAP-DOWNLOAD** — [FireDiagnostics software download page](https://www.daptechnology.com/support/downloads)
 - **DAP-7** — [FireDiagnostics Suite 7.0 release history](https://www.daptechnology.com/products/software/firediagnostics-suite/versions/7-0)
 - **DAP-6** — [FireDiagnostics Suite 6.0 release history](https://www.daptechnology.com/products/software/firediagnostics-suite/versions/6-0)
@@ -525,10 +630,13 @@ name in the API.
 - **SAE-AS5643B** — [SAE AS5643B, reaffirmed
   2025-04-28](https://saemobilus.sae.org/standards/as5643b-ieee-1394b-interface-requirements-military-aerospace-vehicle-applications)
 - **IRIG106-11** — [IRIG 106-11 Chapter 10](https://www.irig106.org/docs/106-11/chapter10.pdf)
+- **IRIG106-HB-1394** — [IRIG 106 Handbook: IEEE-1394 data](https://www.irig106.org/wiki/ch10_handbook%3Aieee_1394_data)
+- **TI-TSB41BA3** — [TSB41BA3A-EP IEEE-1394b PHY data sheet](https://www.ti.com/lit/ds/symlink/tsb41ba3a-ep.pdf)
 - **ITU-T82** — [ITU-T Recommendation T.82](https://www.itu.int/rec/T-REC-T.82)
 
 [DAP-OM]: https://www.daptechnology.com/fileadmin/manuals/OperationManual.pdf
 [DAP-API]: https://www.daptechnology.com/products/software/firediagnostics-suite/firesuite-api
+[DAP-FIRETRAC]: https://www.daptechnology.com/products/interface-solutions/firetrac-mil1394
 [DAP-DOWNLOAD]: https://www.daptechnology.com/support/downloads
 [DAP-7]: https://www.daptechnology.com/products/software/firediagnostics-suite/versions/7-0
 [DAP-6]: https://www.daptechnology.com/products/software/firediagnostics-suite/versions/6-0
@@ -537,4 +645,6 @@ name in the API.
 [DAP-CONTACT]: https://www.daptechnology.com/contact
 [SAE-AS5643B]: https://saemobilus.sae.org/standards/as5643b-ieee-1394b-interface-requirements-military-aerospace-vehicle-applications
 [IRIG106-11]: https://www.irig106.org/docs/106-11/chapter10.pdf
+[IRIG106-HB-1394]: https://www.irig106.org/wiki/ch10_handbook%3Aieee_1394_data
+[TI-TSB41BA3]: https://www.ti.com/lit/ds/symlink/tsb41ba3a-ep.pdf
 [ITU-T82]: https://www.itu.int/rec/T-REC-T.82
