@@ -1,4 +1,4 @@
-use aero1394::bie::{DataItemId, parse_record};
+use aero1394::bie::{BieFileParseError, DataItemId, parse_file, parse_record};
 use aero1394::forensic::FileOffset;
 
 fn fixture_bytes(text: &str) -> Vec<u8> {
@@ -56,12 +56,15 @@ fn assert_assumed_as5643_vpc_valid(bytes: &[u8], base: usize) {
     assert_eq!(calculated_vpc, stored_vpc);
 }
 
-/// Requirements: L3-TST-001
+/// Requirements: L3-TST-001, L3-BIE-004
 #[test]
 fn empty_recording_is_one_zero_word() {
     let bytes = fixture_bytes(include_str!("fixtures/bie/empty-recording.hex"));
 
     assert_eq!(bytes, [0, 0, 0, 0]);
+    let file = parse_file(&bytes, FileOffset::new(0)).expect("empty BIE fixture parses");
+    assert!(file.is_empty());
+    assert_eq!(file.terminator_offset(), FileOffset::new(0));
 }
 
 /// Requirements: L3-TST-001, L3-PRO-005, L3-BIE-001, L3-BIE-002, L3-BIE-003,
@@ -111,9 +114,16 @@ fn startup_fixture_preserves_four_consecutive_records() {
         assert_eq!(be_u64(&bytes, base + 24), payload_ticks[record_index]);
         assert_eq!(be_u32(&bytes, base + 128), vpcs[record_index]);
     }
+
+    assert_eq!(
+        parse_file(&bytes, FileOffset::new(0)).expect_err("excerpt has no file terminator"),
+        BieFileParseError::MissingTerminator {
+            offset: FileOffset::new(528),
+        }
+    );
 }
 
-/// Requirements: L3-TST-001, L3-PRO-005
+/// Requirements: L3-TST-001, L3-PRO-005, L3-BIE-004
 #[test]
 fn end_fixture_preserves_four_records_and_original_terminator() {
     let bytes = fixture_bytes(include_str!("fixtures/bie/end-four-records.hex"));
@@ -129,8 +139,21 @@ fn end_fixture_preserves_four_records_and_original_terminator() {
     let vpcs = [0xED45_F5A5, 0xFB68_1911, 0x0695_7674, 0x158E_7E3B];
 
     assert_eq!(bytes.len(), 532);
+    let file = parse_file(&bytes, FileOffset::new(0)).expect("complete end fixture parses");
+    assert_eq!(file.records().len(), 4);
+    assert_eq!(file.terminator_offset(), FileOffset::new(528));
+    assert_eq!(file.encoded_len(), bytes.len());
+
     for record_index in 0..4 {
         let base = record_index * 132;
+        assert_eq!(
+            file.records()[record_index].file_offset().get(),
+            base as u64
+        );
+        assert_eq!(
+            file.records()[record_index].data_item_id(),
+            DataItemId::new(0x0000_5D04)
+        );
         assert_common_record(&bytes, base);
         assert_assumed_as5643_vpc_valid(&bytes, base);
         assert_eq!(be_u32(&bytes, base + 4), 0x66AA_36AA);

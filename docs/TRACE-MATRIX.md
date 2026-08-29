@@ -32,9 +32,9 @@ file or add `--check` to detect drift without writing.
 
 | L2 ID | L3 children | Verification artifacts | Status |
 | --- | --- | --- | --- |
-| L2-BIE-001 | L3-BIE-001, L3-BIE-002, L3-BIE-003 | `src/bie/mod.rs::accepts_a_nonzero_id_with_zero_length_stored_data`<br>`src/bie/mod.rs::parses_explicit_fields_variable_length_and_unknown_id`<br>`src/bie/mod.rs::rejects_an_unrepresentable_record_end_offset`<br>`src/bie/mod.rs::reports_declared_and_available_body_sizes`<br>`tests/bie_fixtures.rs::startup_fixture_preserves_four_consecutive_records` | Implemented |
-| L2-BIE-002 | L3-BIE-004, L3-BIE-005 | `src/bie/mod.rs::reports_a_truncated_header`<br>`src/bie/mod.rs::reports_declared_and_available_body_sizes` | Partially Implemented |
-| L2-BIE-003 | L3-BIE-006, L3-BIE-007, L3-BIE-008 | `ROADMAP.md`<br>`docs/BIE-FORMAT.md`<br>`src/bie/mod.rs::accepts_a_nonzero_id_with_zero_length_stored_data`<br>`src/bie/mod.rs::parses_explicit_fields_variable_length_and_unknown_id`<br>`src/bie/mod.rs::rejects_an_unrepresentable_record_end_offset`<br>`tests/bie_fixtures.rs::startup_fixture_preserves_four_consecutive_records`<br>`tests/fixtures/bie/README.md` | Implemented |
+| L2-BIE-001 | L3-BIE-001, L3-BIE-002, L3-BIE-003 | `src/bie/mod.rs::accepts_a_nonzero_id_with_zero_length_stored_data`<br>`src/bie/mod.rs::parses_explicit_fields_variable_length_and_unknown_id`<br>`src/bie/mod.rs::parses_variable_length_records_through_the_file_terminator`<br>`src/bie/mod.rs::preserves_stored_data_truncation_details_at_file_level`<br>`src/bie/mod.rs::rejects_an_unrepresentable_record_end_offset`<br>`src/bie/mod.rs::rejects_an_unrepresentable_terminator_end_offset`<br>`src/bie/mod.rs::reports_declared_and_available_body_sizes`<br>`tests/bie_fixtures.rs::startup_fixture_preserves_four_consecutive_records` | Implemented |
+| L2-BIE-002 | L3-BIE-004, L3-BIE-005 | `src/bie/mod.rs::accepts_the_sentinel_only_empty_form`<br>`src/bie/mod.rs::parses_variable_length_records_through_the_file_terminator`<br>`src/bie/mod.rs::preserves_stored_data_truncation_details_at_file_level`<br>`src/bie/mod.rs::reports_a_missing_terminator_at_a_record_boundary`<br>`src/bie/mod.rs::reports_a_partial_terminal_word_as_a_truncated_header`<br>`src/bie/mod.rs::reports_a_truncated_header`<br>`src/bie/mod.rs::reports_declared_and_available_body_sizes`<br>`src/bie/mod.rs::reports_trailing_data_after_the_terminator`<br>`tests/bie_fixtures.rs::empty_recording_is_one_zero_word`<br>`tests/bie_fixtures.rs::end_fixture_preserves_four_records_and_original_terminator` | Implemented |
+| L2-BIE-003 | L3-BIE-006, L3-BIE-007, L3-BIE-008 | `ROADMAP.md`<br>`docs/BIE-FORMAT.md`<br>`src/bie/mod.rs::accepts_a_nonzero_id_with_zero_length_stored_data`<br>`src/bie/mod.rs::parses_explicit_fields_variable_length_and_unknown_id`<br>`src/bie/mod.rs::parses_variable_length_records_through_the_file_terminator`<br>`src/bie/mod.rs::rejects_an_unrepresentable_record_end_offset`<br>`src/bie/mod.rs::rejects_an_unrepresentable_terminator_end_offset`<br>`tests/bie_fixtures.rs::startup_fixture_preserves_four_consecutive_records`<br>`tests/fixtures/bie/README.md` | Implemented |
 | L2-BIE-004 | L3-BIE-009 | _(TBD)_ | Draft |
 | L2-BIE-005 | L3-BIE-010 | _(TBD)_ | Draft |
 
@@ -115,7 +115,7 @@ file or add `--check` to detect drift without writing.
 
 | L2 ID | L3 children | Verification artifacts | Status |
 | --- | --- | --- | --- |
-| L2-TST-001 | L3-TST-001, L3-TST-002, L3-TST-003, L3-TST-006 | `docs/adr/0009-treat-documentation-and-test-evidence-as-deliverables.md`<br>`tests/bie_fixtures.rs::empty_recording_is_one_zero_word`<br>`tests/bie_fixtures.rs::end_fixture_preserves_four_records_and_original_terminator`<br>`tests/bie_fixtures.rs::startup_fixture_preserves_four_consecutive_records`<br>`tests/fixtures/bie/README.md`<br>`tests/fixtures/bie/empty-recording.hex`<br>`tests/fixtures/bie/end-four-records.hex`<br>`tests/fixtures/bie/startup-four-records.hex` | Partially Implemented |
+| L2-TST-001 | L3-TST-001, L3-TST-002, L3-TST-003, L3-TST-006 | `docs/adr/0009-treat-documentation-and-test-evidence-as-deliverables.md`<br>`src/bie/mod.rs::accepts_the_sentinel_only_empty_form`<br>`tests/bie_fixtures.rs::empty_recording_is_one_zero_word`<br>`tests/bie_fixtures.rs::end_fixture_preserves_four_records_and_original_terminator`<br>`tests/bie_fixtures.rs::startup_fixture_preserves_four_consecutive_records`<br>`tests/fixtures/bie/README.md`<br>`tests/fixtures/bie/empty-recording.hex`<br>`tests/fixtures/bie/end-four-records.hex`<br>`tests/fixtures/bie/startup-four-records.hex` | Partially Implemented |
 | L2-TST-002 | L3-TST-004 | _(TBD)_ | Draft |
 | L2-TST-003 | L3-TST-005 | _(TBD)_ | Draft |
 
@@ -130,17 +130,17 @@ file or add `--check` to detect drift without writing.
 
 | Category | L1 | L2 | L3 | L2 tested | L3 tested | L2 verified | L3 verified |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| BIE | 1 | 5 | 10 | 0 | 7 | 0 | 7 |
+| BIE | 1 | 5 | 10 | 0 | 8 | 0 | 8 |
 | TIM | 1 | 4 | 10 | 0 | 2 | 0 | 2 |
 | PRO | 1 | 3 | 5 | 0 | 2 | 0 | 2 |
 | PAY | 1 | 4 | 12 | 0 | 0 | 0 | 2 |
 | OUT | 1 | 2 | 6 | 0 | 0 | 0 | 1 |
 | TST | 1 | 3 | 6 | 0 | 1 | 0 | 3 |
-| **Total** | **6** | **21** | **49** | **0** | **12** | **0** | **17** |
+| **Total** | **6** | **21** | **49** | **0** | **13** | **0** | **18** |
 
-**Tested by at least one marker**: 12 of 70 (17.1%).
+**Tested by at least one marker**: 13 of 70 (18.6%).
 
-**Verified by a test or named non-test evidence**: 17 of 70 (24.3%).
+**Verified by a test or named non-test evidence**: 18 of 70 (25.7%).
 
 ### Applicability summary
 

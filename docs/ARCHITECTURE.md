@@ -1,6 +1,6 @@
 # Aero1394 architecture
 
-- Status: Stage 1 implemented; first Stage 2 record-parsing slice implemented
+- Status: Stage 1 and strict BIE framing implemented; Stage 2 evidence-limited
 - Last updated: 2026-08-29
 
 ## Current vertical slice
@@ -18,7 +18,7 @@ Library: forensic::Hexdump -> HexdumpLine { absolute offset, raw bytes }
                               v
                          std::io::Read
 
-Library: &[u8] + FileOffset -> bie::parse_record -> borrowed BieRecord
+Library: &[u8] + FileOffset -> bie::parse_file -> BieFile { borrowed records }
 ```
 
 The `forensic` module is format-neutral. It does not identify a source as BIE,
@@ -38,12 +38,14 @@ seeking, writing terminal output, and choosing process exit codes are adapter
 concerns. The library can therefore be reused with memory buffers, extracted
 Chapter 10 payloads, or another storage adapter without invoking a process.
 
-The `bie` module implements the first framing increment. It parses one complete
-non-terminator record from a byte slice, derives the body boundary from the
-encoded low-16-bit length, preserves unknown IDs and unresolved flags, and
-returns the encoded byte count for a future file-level iterator. It does not
-yet chain records or classify the zero-word sentinel, missing terminator, or
-trailing bytes.
+The `bie` module parses either one non-terminator record or a strict complete
+file from a byte slice. It derives body boundaries from encoded low-16-bit
+lengths, preserves unknown IDs and unresolved flags, chains variable-length
+records, and requires the terminal zero word to be the final four bytes. The
+file result owns only its record-view collection; every stored-data region
+continues to borrow the caller's input. Framing reports truncation, missing
+termination, trailing data, and offset overflow without performing validation,
+protocol interpretation, or recovery.
 
 ## Dependency direction
 

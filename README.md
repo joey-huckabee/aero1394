@@ -14,12 +14,13 @@ The Rust library and CLI perform bounded, offset-aware hex inspection. Supplied
 simulation excerpts and recorder summary metadata establish a 16-byte
 big-endian header and length-delimited stored data for the observed record
 family. The library now safely parses one complete non-terminator BIE record
-while preserving its raw values, absolute offset, and exact stored data.
-Whole-file chaining, sentinel/trailing-data handling, and protocol decoding
-remain unimplemented.
+or a strict complete BIE byte slice while preserving raw values, absolute
+offsets, and exact stored data. Whole-file parsing requires the four-byte zero
+sentinel and reports truncation, a missing terminator, or trailing bytes.
+Protocol decoding remains unimplemented.
 
-The next increment is whole-file BIE record chaining and zero-word sentinel
-handling, exercised by the sanitized golden messages under
+The next increment is a human-readable BIE record inventory CLI backed by the
+same library parser and exercised by the sanitized golden messages under
 `tests/fixtures/bie`.
 
 The scoped gates and incremental path for the first pre-`1.0.0` release are in

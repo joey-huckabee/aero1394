@@ -1,8 +1,8 @@
 //! Safe, slice-oriented parsing for the internal BIE capture format.
 //!
-//! This module currently parses one non-terminator record at a time. File-level
-//! record chaining, zero-word termination, trailing-data handling, validation,
-//! policy, and recovery remain separate later layers.
+//! This module parses individual non-terminator records and strict complete
+//! BIE byte slices. Validation, policy, and recovery remain separate later
+//! layers.
 
 use crate::forensic::FileOffset;
 use std::error::Error;
@@ -10,6 +10,9 @@ use std::fmt;
 
 /// Number of bytes in the fixed BIE record header.
 pub const RECORD_HEADER_LEN: usize = 16;
+
+/// Number of bytes in the terminal zero word.
+pub const FILE_TERMINATOR_LEN: usize = 4;
 
 const DATA_LENGTH_MASK: u32 = 0x0000_FFFF;
 const UNRESOLVED_FLAGS_MASK: u32 = 0xFFFF_0000;
@@ -131,6 +134,40 @@ impl<'a> BieRecord<'a> {
     }
 }
 
+/// One structurally complete BIE file borrowing its records' stored data.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct BieFile<'a> {
+    records: Vec<BieRecord<'a>>,
+    terminator_offset: FileOffset,
+    encoded_len: usize,
+}
+
+impl<'a> BieFile<'a> {
+    /// Returns all records in file order.
+    #[must_use]
+    pub fn records(&self) -> &[BieRecord<'a>] {
+        &self.records
+    }
+
+    /// Returns the absolute offset of the terminal zero word.
+    #[must_use]
+    pub const fn terminator_offset(&self) -> FileOffset {
+        self.terminator_offset
+    }
+
+    /// Returns the complete encoded size, including the terminal zero word.
+    #[must_use]
+    pub const fn encoded_len(&self) -> usize {
+        self.encoded_len
+    }
+
+    /// Returns whether the file contains no records before its terminator.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.records.is_empty()
+    }
+}
+
 /// A failure to parse one non-terminator BIE record.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BieRecordParseError {
@@ -202,6 +239,124 @@ impl fmt::Display for BieRecordParseError {
 }
 
 impl Error for BieRecordParseError {}
+
+/// A failure to parse one strict, complete BIE file.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum BieFileParseError {
+    /// A non-terminator record was malformed or incomplete.
+    Record(BieRecordParseError),
+    /// The input ended at a record boundary without a terminal zero word.
+    MissingTerminator {
+        /// Absolute offset where the terminator was required.
+        offset: FileOffset,
+    },
+    /// Bytes remained after a terminal zero word.
+    TrailingData {
+        /// Absolute offset of the first trailing byte.
+        offset: FileOffset,
+        /// Number of bytes following the terminator.
+        trailing_bytes: usize,
+    },
+    /// An absolute file offset could not be represented by `u64`.
+    OffsetOverflow {
+        /// Absolute offset before the failed advance.
+        offset: FileOffset,
+        /// Number of bytes in the failed advance.
+        byte_count: usize,
+    },
+}
+
+impl fmt::Display for BieFileParseError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Record(error) => error.fmt(formatter),
+            Self::MissingTerminator { offset } => write!(
+                formatter,
+                "missing BIE file terminator at 0x{:016x}",
+                offset.get()
+            ),
+            Self::TrailingData {
+                offset,
+                trailing_bytes,
+            } => write!(
+                formatter,
+                "{trailing_bytes} trailing bytes after BIE terminator at 0x{:016x}",
+                offset.get()
+            ),
+            Self::OffsetOverflow { offset, byte_count } => write!(
+                formatter,
+                "BIE file offset overflow advancing {byte_count} bytes from 0x{:016x}",
+                offset.get()
+            ),
+        }
+    }
+}
+
+impl Error for BieFileParseError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::Record(error) => Some(error),
+            Self::MissingTerminator { .. }
+            | Self::TrailingData { .. }
+            | Self::OffsetOverflow { .. } => None,
+        }
+    }
+}
+
+impl From<BieRecordParseError> for BieFileParseError {
+    fn from(error: BieRecordParseError) -> Self {
+        Self::Record(error)
+    }
+}
+
+/// Parses a strict, complete BIE byte slice.
+///
+/// Records are chained using their encoded lengths until a four-byte zero
+/// sentinel is found. The sentinel must be the final bytes in `input`.
+/// Recovery and resynchronization are deliberately not framing behavior.
+pub fn parse_file(input: &[u8], file_offset: FileOffset) -> Result<BieFile<'_>, BieFileParseError> {
+    let mut records = Vec::new();
+    let mut cursor = 0_usize;
+
+    loop {
+        let current_offset = checked_file_offset(file_offset, cursor)?;
+        let remaining = &input[cursor..];
+
+        if remaining.is_empty() {
+            return Err(BieFileParseError::MissingTerminator {
+                offset: current_offset,
+            });
+        }
+
+        if remaining.len() >= FILE_TERMINATOR_LEN
+            && remaining[..FILE_TERMINATOR_LEN] == [0; FILE_TERMINATOR_LEN]
+        {
+            let trailing_bytes = remaining.len() - FILE_TERMINATOR_LEN;
+            let terminator_end = checked_file_offset(current_offset, FILE_TERMINATOR_LEN)?;
+            if trailing_bytes != 0 {
+                return Err(BieFileParseError::TrailingData {
+                    offset: terminator_end,
+                    trailing_bytes,
+                });
+            }
+
+            return Ok(BieFile {
+                records,
+                terminator_offset: current_offset,
+                encoded_len: input.len(),
+            });
+        }
+
+        let (record, consumed) = parse_record(remaining, current_offset)?;
+        cursor = cursor
+            .checked_add(consumed)
+            .ok_or(BieFileParseError::OffsetOverflow {
+                offset: current_offset,
+                byte_count: consumed,
+            })?;
+        records.push(record);
+    }
+}
 
 /// Parses one non-terminator BIE record from the beginning of `input`.
 ///
@@ -284,6 +439,19 @@ fn read_u32_be(input: &[u8], offset: usize) -> u32 {
             .try_into()
             .expect("record header length was checked"),
     )
+}
+
+fn checked_file_offset(
+    offset: FileOffset,
+    byte_count: usize,
+) -> Result<FileOffset, BieFileParseError> {
+    let byte_count_u64 = u64::try_from(byte_count)
+        .map_err(|_| BieFileParseError::OffsetOverflow { offset, byte_count })?;
+    offset
+        .get()
+        .checked_add(byte_count_u64)
+        .map(FileOffset::new)
+        .ok_or(BieFileParseError::OffsetOverflow { offset, byte_count })
 }
 
 #[cfg(test)]
@@ -409,6 +577,130 @@ mod tests {
             BieRecordParseError::OffsetOverflow {
                 offset: FileOffset::new(u64::MAX - 15),
                 record_len: 16,
+            }
+        );
+    }
+
+    /// Requirements: L3-BIE-003, L3-BIE-004, L3-BIE-007, L3-BIE-008
+    #[test]
+    fn parses_variable_length_records_through_the_file_terminator() {
+        let first = record_bytes(0x1111_1111, 10, 20, 0x4000_0001, &[0xAA]);
+        let second = record_bytes(0x2222_2222, 30, 40, 0x0000_0002, &[0xBB, 0xCC]);
+        let terminator_relative_offset = first.len() + second.len();
+        let mut bytes = first;
+        bytes.extend_from_slice(&second);
+        bytes.extend_from_slice(&[0; FILE_TERMINATOR_LEN]);
+
+        let file = parse_file(&bytes, FileOffset::new(0x100)).expect("complete file parses");
+
+        assert_eq!(file.records().len(), 2);
+        assert_eq!(file.records()[0].file_offset(), FileOffset::new(0x100));
+        assert_eq!(file.records()[0].stored_data(), [0xAA]);
+        assert_eq!(file.records()[1].file_offset(), FileOffset::new(0x100 + 17));
+        assert_eq!(file.records()[1].stored_data(), [0xBB, 0xCC]);
+        assert_eq!(
+            file.terminator_offset(),
+            FileOffset::new(
+                0x100
+                    + u64::try_from(terminator_relative_offset).expect("test file offset fits u64")
+            )
+        );
+        assert_eq!(file.encoded_len(), bytes.len());
+        assert!(!file.is_empty());
+    }
+
+    /// Requirements: L3-BIE-004, L3-TST-001
+    #[test]
+    fn accepts_the_sentinel_only_empty_form() {
+        let bytes = [0; FILE_TERMINATOR_LEN];
+
+        let file = parse_file(&bytes, FileOffset::new(0x20)).expect("empty form parses");
+
+        assert!(file.is_empty());
+        assert_eq!(file.terminator_offset(), FileOffset::new(0x20));
+        assert_eq!(file.encoded_len(), FILE_TERMINATOR_LEN);
+    }
+
+    /// Requirements: L3-BIE-004
+    #[test]
+    fn reports_trailing_data_after_the_terminator() {
+        let bytes = [0, 0, 0, 0, 0xAA, 0xBB];
+
+        let error = parse_file(&bytes, FileOffset::new(0x80))
+            .expect_err("trailing bytes must not be accepted");
+
+        assert_eq!(
+            error,
+            BieFileParseError::TrailingData {
+                offset: FileOffset::new(0x84),
+                trailing_bytes: 2,
+            }
+        );
+    }
+
+    /// Requirements: L3-BIE-005
+    #[test]
+    fn reports_a_missing_terminator_at_a_record_boundary() {
+        let bytes = record_bytes(1, 2, 3, 0, &[]);
+
+        let error = parse_file(&bytes, FileOffset::new(0x100))
+            .expect_err("a complete record does not replace the terminator");
+
+        assert_eq!(
+            error,
+            BieFileParseError::MissingTerminator {
+                offset: FileOffset::new(0x110),
+            }
+        );
+    }
+
+    /// Requirements: L3-BIE-005
+    #[test]
+    fn reports_a_partial_terminal_word_as_a_truncated_header() {
+        let error = parse_file(&[0, 0, 0], FileOffset::new(0x40))
+            .expect_err("a partial zero word is not a terminator");
+
+        assert_eq!(
+            error,
+            BieFileParseError::Record(BieRecordParseError::TruncatedHeader {
+                offset: FileOffset::new(0x40),
+                needed: RECORD_HEADER_LEN,
+                available: 3,
+            })
+        );
+    }
+
+    /// Requirements: L3-BIE-002, L3-BIE-005
+    #[test]
+    fn preserves_stored_data_truncation_details_at_file_level() {
+        let bytes = record_bytes(1, 2, 3, 4, &[0xAA, 0xBB]);
+
+        let error = parse_file(&bytes, FileOffset::new(0x100))
+            .expect_err("an incomplete record body makes the file malformed");
+
+        assert_eq!(
+            error,
+            BieFileParseError::Record(BieRecordParseError::TruncatedStoredData {
+                offset: FileOffset::new(0x110),
+                needed: 4,
+                available: 2,
+            })
+        );
+    }
+
+    /// Requirements: L3-BIE-002, L3-BIE-007
+    #[test]
+    fn rejects_an_unrepresentable_terminator_end_offset() {
+        let bytes = [0; FILE_TERMINATOR_LEN];
+
+        let error = parse_file(&bytes, FileOffset::new(u64::MAX - 3))
+            .expect_err("the terminator end offset must not wrap");
+
+        assert_eq!(
+            error,
+            BieFileParseError::OffsetOverflow {
+                offset: FileOffset::new(u64::MAX - 3),
+                byte_count: FILE_TERMINATOR_LEN,
             }
         );
     }

@@ -50,7 +50,7 @@ contracts, not claims about `v0.1.0` runtime behavior.
 | Increment | Functional result | Exit evidence | Status |
 | --- | --- | --- | --- |
 | 1. Record framing | Parse one complete non-terminator record without copying its stored data. | Unit boundaries and known-good startup fixture; commit `5b8f0c9`. | Complete |
-| 2. File framing | Parse a strict complete BIE slice through its sentinel. | Multi-record, empty, end-fixture, truncation, missing-terminator, trailing-data, and overflow tests. | In progress |
+| 2. File framing | Parse a strict complete BIE slice through its sentinel. | Multi-record, empty, end-fixture, truncation, missing-terminator, trailing-data, and overflow tests. | Complete |
 | 3. Record inventory CLI | List record number, offset, ID, recorder time, raw status, flags, and body length. | CLI success/error integration tests using sanitized fixtures. | Planned |
 | 4. Release hardening | Make the documented commands and distributable binaries reproducible. | Exact CI checks, release builds on Windows and Linux, CLI help review, release notes, and packaged-artifact smoke tests. | Planned |
 

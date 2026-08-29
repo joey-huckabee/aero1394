@@ -18,21 +18,21 @@ before implementation begins.
 The bounded scope and exit gates for the first implementation release are
 defined in [`docs/RELEASE-PLAN.md`](docs/RELEASE-PLAN.md).
 
-### Finish the BIE framing adapter
+### Expose BIE record inventory in the CLI
 
-The first record-level slice now parses explicit big-endian header fields,
-uses checked length arithmetic, retains raw fields and absolute offsets, and
-accepts unknown IDs and variable body lengths. Complete the remaining
-file-level contract in [`docs/BIE-FORMAT.md`](docs/BIE-FORMAT.md):
+Build a human-readable `records` command on the strict BIE parser without
+adding protocol interpretation. For every record, display:
 
-- chain consecutive variable-length records;
-- zero-word termination;
-- precise truncation and trailing-data diagnostics;
-- distinguish a missing terminator from a truncated record; and
-- define the strict file result without adding recovery policy to framing.
+- record index and absolute offset;
+- data-item ID;
+- raw recorder seconds and microseconds;
+- raw status/length and unresolved flags; and
+- stored-data length.
 
-Exit gate: the active BIE and fixture requirements in `docs/L3.md` have Rust
-test markers and the supplied BIE fixtures pass as golden cases.
+Malformed input must use the strict library error and produce a nonzero exit
+status. Exit gate: success, truncation, missing-terminator, and trailing-data
+paths have CLI integration tests using synthetic or sanitized inputs; offset
+overflow remains covered at the library boundary.
 
 ### Resolve BIE status flag `0x40000000`
 
