@@ -118,10 +118,11 @@ payload module sees byte offset zero at record offset `0x18`.
 
 ### Carrier relationship
 
-The record-specific protocol words, STOF candidates, VPC evidence, missing ASM
-header hypothesis, and recorder cadence are isolated in
-[`BIE-FORMAT.md`](BIE-FORMAT.md). They are context for locating this payload,
-not fields of the Rust application structure.
+The record-specific protocol words, STOF candidates, VPC evidence, and missing
+ASM header hypothesis are isolated in [`BIE-FORMAT.md`](BIE-FORMAT.md).
+Capture provenance and recorder sampling context are retained in
+[`BIE-EVIDENCE.md`](BIE-EVIDENCE.md). They are context for locating this
+payload, not fields of the Rust application structure.
 
 ### Platform production rate
 

@@ -1,23 +1,29 @@
 # BIE binary format
 
-- Status: Internal format; observed framing is implementation-ready and `0x40000000` needs resolution
+- Status: Current internal specification; framing defined and `0x40000000` unresolved
 - Last updated: 2026-08-28
 - Applies to: internally defined `.bie` aerospace IEEE-1394 recordings
 
 ## Purpose
 
-This document is the evidence ledger and parser contract for the internal BIE
-capture format. It defines the supported file and record grammar, distinguishes
-wire facts from downstream interpretation, and records the remaining semantic
-work without assigning meanings that the available evidence cannot support.
+This document is the definitive format specification and parser contract for
+the internal BIE capture format. It defines the supported file and record
+grammar, required parser behavior, recognition rules, stored-data boundary,
+and compatibility constraints. Unresolved fields are explicitly preserved
+without assigning unsupported meanings.
 
-BIE is not a DAP Technology or FireSpy file format. FireSpy and FireTrac may be
-part of a surrounding capture, simulation, or analysis environment, but they
-do not define ownership or the byte layout documented here. Candidate support
-for other input containers belongs in the forward-looking
+Capture provenance, environment context, and chronological research notes are
+maintained separately in [`BIE-EVIDENCE.md`](BIE-EVIDENCE.md). That development
+record supports this specification but is not part of the format contract.
+
+BIE is an internally defined format, not a DAP Technology, FireSpy, or FireTrac
+format. Candidate support for other input containers belongs in the
+forward-looking
 [`ROADMAP.md`](../ROADMAP.md), not in this format definition.
 
-Evidence labels used below are:
+The grammar and parser requirements below are normative for the currently
+supported BIE format unless a field is explicitly marked with one of these
+status labels:
 
 | Label | Meaning |
 | --- | --- |
@@ -25,60 +31,6 @@ Evidence labels used below are:
 | Inferred | A conclusion drawn from confirmed behavior, but not yet independently defined |
 | Hypothesis | Plausible and worth testing against another sample |
 | Needs resolution | Preserved and tracked, but its semantic meaning is not yet known |
-
-## Supplied capture evidence
-
-The current byte map is correlated with excerpts of one internal simulation
-recording and its corrected recorder summary. The container-relevant summary
-values are:
-
-```text
-Data File: Startup.draw.data.1394.vs_bus_b3.unused.bie
-Data Type: IEEE 1394
-Data Code: vs_bus_b3
-Recorder Buffer Mode: Direct to File (local disk)
-Data Set Count: 1
-Recording Timetags:
-  start=31:08:01:59.063844
-  stop=31:08:05:46.335672
-```
-
-The summary reports a recording date of Wednesday, July 31, 2024. The complete
-capture is not committed, so its digest and handling classification are not
-available in the repository. The supplied end-of-file offsets imply this
-geometry for the observed recording:
-
-```text
-877 records * 132 bytes = 115,764 bytes
-zero word at EOF         =       4 bytes
-total                    = 115,768 bytes (0x1C438)
-```
-
-Selected sanitized records are retained as machine-readable hexadecimal test
-inputs under [`tests/fixtures/bie`](../tests/fixtures/bie/README.md). They are
-evidence for the current definition and do not contain the complete source
-capture.
-
-### Capture-rate context
-
-Sampling of the supplied messages was attempted at 80 Hz. An 80 Hz attempt
-rate has a nominal interval of 12.5 ms; a 100 Hz configuration has a nominal
-interval of 10 ms. FireSpy sampling in the surrounding test environment may be
-configured for either 80 Hz or 100 Hz, consistent with the typical AS5643 STOF
-frame rates documented by DAP Technology ([DAP-MIL1394]).
-
-The BIE timestamps remain authoritative for what was actually recorded. The
-supplied excerpts contain exact 12.5 ms and 25 ms gaps as well as a 24.142 ms
-gap, so a decoder must not synthesize an ideal sampling grid or invent missing
-records. The configured sample-attempt rate, actual record timestamps, AS5643
-frame rate, and application payload production rate are separate values.
-
-### FireTrac environment note
-
-DAP Technology documents FireTrac support for Linux and customized
-data-recorder, simulator, and monitoring applications ([DAP-FIRETRAC]). That
-is relevant deployment context for an internal recorder, but it does not make
-BIE a FireTrac, FireSpy, or DAP-defined file format.
 
 ## File and record grammar
 
@@ -209,9 +161,9 @@ At the BIE layer, the declared stored-data region is opaque. Its internal
 protocol envelope, application identity, field layout, integrity behavior, and
 message-specific timing are not part of the generic container grammar. The BIE
 parser must preserve the exact bytes and length without importing a protocol or
-built-in payload decoder. This evidence ledger may still record observations
-about how a particular BIE record family stores those bytes, provided those
-observations remain separate from the generic parser contract.
+built-in payload decoder. This specification records a separate, explicitly
+scoped interpretation for the supplied record family below; that interpretation
+does not change the generic parser contract.
 
 The supplied BIE stored-data region does not contain all information normally
 expected in a complete IEEE-1394 wire packet. No complete link header, header
@@ -379,36 +331,3 @@ cargo run --release -- hexdump path/to/capture.bie --offset 0 --length 256
 
 See [Reverse-engineering BIE captures](REVERSE-ENGINEERING.md) for bounded
 range selection, provenance recording, and handling guidance.
-
-## Research log
-
-### 2026-08-28
-
-- Confirmed that BIE is an internally defined format and removed the earlier
-  external-format provenance hypothesis.
-- Established the 16-byte big-endian record header and length-delimited stored
-  data for the supplied record family.
-- Correlated recorder seconds and microseconds with the July 31, 2024 local
-  recording window.
-- Recorded the 877-record-plus-zero-word geometry and retained sanitized
-  startup and populated records as test fixtures.
-- Defined sentinel, truncation, trailing-data, unknown-ID, timestamp, and
-  recognition behavior for the parser.
-- Marked `0x40000000` as needing resolution and moved its investigation into
-  the forward-looking roadmap.
-- Recorded that sampling was attempted at 80 Hz while preserving actual BIE
-  timestamps and keeping 80 Hz/100 Hz capture configuration distinct from
-  payload production timing.
-- Moved the supplied record family's protocol-word, STOF, missing-header, and
-  VPC observations into this BIE evidence ledger so they cannot be mistaken
-  for the normative AS5643 protocol contract.
-- Kept FireTrac only as possible source-environment context; it is not BIE
-  format provenance.
-
-## Sources
-
-- **DAP-MIL1394** — [Mil1394 (SAE AS5643) specification overview](https://www.daptechnology.com/mil1394)
-- **DAP-FIRETRAC** — [FireTrac Mil1394 product page](https://www.daptechnology.com/products/interface-solutions/firetrac-mil1394/)
-
-[DAP-MIL1394]: https://www.daptechnology.com/mil1394
-[DAP-FIRETRAC]: https://www.daptechnology.com/products/interface-solutions/firetrac-mil1394/

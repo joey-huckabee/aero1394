@@ -53,7 +53,7 @@ file or add `--check` to detect drift without writing.
 | L2-TIM-001 | L3-TIM-001, L3-TIM-002, L3-TIM-003, L3-TIM-004 | _(TBD)_ | Draft |
 | L2-TIM-002 | L3-TIM-005, L3-TIM-006 | _(TBD)_ | Draft |
 | L2-TIM-003 | L3-TIM-007, L3-TIM-008 | _(TBD)_ | Draft |
-| L2-TIM-004 | L3-TIM-009, L3-TIM-010 | `docs/BIE-FORMAT.md`<br>`tests/fixtures/bie/README.md` | Draft |
+| L2-TIM-004 | L3-TIM-009, L3-TIM-010 | `docs/BIE-EVIDENCE.md`<br>`tests/fixtures/bie/README.md` | Draft |
 
 ### L1-PRO: Protocol-envelope and integrity handling
 
@@ -86,7 +86,7 @@ file or add `--check` to detect drift without writing.
 | L2-PAY-001 | L3-PAY-001, L3-PAY-002 | _(TBD)_ | Draft |
 | L2-PAY-002 | L3-PAY-003, L3-PAY-007, L3-PAY-008, L3-PAY-009 | _(TBD)_ | Draft |
 | L2-PAY-003 | L3-PAY-004, L3-PAY-005, L3-PAY-006 | _(TBD)_ | Draft |
-| L2-PAY-004 | L3-PAY-010, L3-PAY-011, L3-PAY-012 | `docs/BIE-FORMAT.md`<br>`docs/PAYLOADS.md`<br>`docs/adr/0012-use-built-in-rust-payload-definitions.md` | Partially Implemented |
+| L2-PAY-004 | L3-PAY-010, L3-PAY-011, L3-PAY-012 | `docs/BIE-EVIDENCE.md`<br>`docs/PAYLOADS.md`<br>`docs/adr/0012-use-built-in-rust-payload-definitions.md` | Partially Implemented |
 
 ### L1-OUT: Canonical data and output adapters
 

@@ -125,9 +125,10 @@ parser should implement that generic header and length boundary first,
 preserving each stored region and unresolved flag as raw evidence.
 
 Protocol-envelope interpretation and the future typed payload registry remain
-downstream operations. The complete evidence map is in `BIE-FORMAT.md`; payload
-knowledge is in `PAYLOADS.md`; testable commitments are decomposed through
-`L1.md`, `L2.md`, and `L3.md`, with live status in `TRACE-MATRIX.md`.
+downstream operations. The definitive format contract is in `BIE-FORMAT.md`,
+its development provenance is in `BIE-EVIDENCE.md`, and payload knowledge is in
+`PAYLOADS.md`. Testable commitments are decomposed through `L1.md`, `L2.md`,
+and `L3.md`, with live status in `TRACE-MATRIX.md`.
 
 ## Verification
 

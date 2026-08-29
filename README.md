@@ -19,7 +19,9 @@ The next milestone is a safe, slice-oriented BIE framing parser exercised by
 the sanitized golden messages under `tests/fixtures/bie`.
 
 See the [internal BIE format contract](docs/BIE-FORMAT.md) for the supported
-grammar, evidence limits, and unresolved status flag.
+grammar, explicit field status, and unresolved status flag. Capture provenance
+and specification-development history are retained separately in the
+[BIE development evidence](docs/BIE-EVIDENCE.md).
 
 ## Build and inspect a capture
 

@@ -5,7 +5,9 @@
 
 This procedure turns observations from an unknown capture into reproducible
 evidence without assuming that the extension identifies its contents. The
-format claims and open questions belong in [BIE-FORMAT.md](BIE-FORMAT.md).
+format contract and open format semantics belong in
+[BIE-FORMAT.md](BIE-FORMAT.md). Capture provenance, observation history, and
+source-environment context belong in [BIE-EVIDENCE.md](BIE-EVIDENCE.md).
 Application-specific layouts belong in [PAYLOADS.md](PAYLOADS.md).
 
 ## Protect and record the source
@@ -38,7 +40,8 @@ sha256sum /captures/sample.bie
 
 Do not send a real capture to a vendor by ordinary email when it may contain
 CUI, ITAR-controlled, proprietary, or otherwise restricted information. Follow
-the controlled-transfer guidance recorded in `BIE-FORMAT.md`.
+the applicable organizational transfer rules and record the approved handling
+constraints in `BIE-EVIDENCE.md`.
 
 ## Produce bounded observations
 
