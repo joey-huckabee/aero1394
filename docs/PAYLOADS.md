@@ -1,7 +1,7 @@
 # Built-in application payloads
 
 - Status: Initial payload evidence; complete field definition pending
-- Last updated: 2026-08-28
+- Last updated: 2026-08-29
 - Applies to: application bytes located after BIE and protocol framing
 
 ## Purpose and boundary
@@ -203,11 +203,26 @@ recorder delta                                      14.6 s
 empirical rate                         13,597,508,871 ticks/s
 ```
 
-Regression over the supplied pairs was also approximately 13.5983 GHz. A
-13.6 GHz nominal rate is therefore a strong candidate, corresponding to about
-73.5294 picoseconds per nominal tick, but it remains provisional. Any derived
-seconds value must carry the selected rate and evidence state. Parquet metadata
-is an appropriate place to record that rate; the raw ticks remain canonical.
+Regression over the supplied pairs was also approximately 13.5983 GHz. The
+provided nominal clock calculation is:
+
+```text
+base clock              = 106.25 MHz
+tick multiplier         = 2^7 = 128
+nominal tick rate       = 106.25e6 * 2^7
+                        = 13,600,000,000 ticks/second (13.6 GHz)
+
+one tick (LSB)          = 1 / (106.25e6 * 2^7) seconds
+                        = 7.35294117647e-11 seconds
+                        = 73.5294117647 picoseconds
+```
+
+The endpoint-derived rate of 13,597,508,871 ticks/s is approximately 0.0183%
+below that nominal value, so the capture strongly corroborates the calculation.
+The clock epoch and the payload definition's signedness remain unconfirmed.
+Any derived seconds value must carry the selected rate and evidence state.
+Parquet metadata is an appropriate place to record the rate and LSB duration;
+the raw ticks remain canonical.
 
 ### Provisional float evidence
 

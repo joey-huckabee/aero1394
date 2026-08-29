@@ -1,7 +1,7 @@
 # BIE specification development evidence
 
 - Status: Working development record; non-normative
-- Last updated: 2026-08-28
+- Last updated: 2026-08-29
 
 ## Purpose
 
@@ -13,9 +13,9 @@ requirements, and compatibility rules are maintained in
 
 ## Supplied capture evidence
 
-The current byte map is correlated with excerpts of one internal simulation
-recording and its corrected recorder summary. The container-relevant summary
-values are:
+The current byte map is correlated with excerpts of one known-good internal
+simulation BIE capture recorded using a FireSpy and its corrected recorder
+summary. The container-relevant summary values are:
 
 ```text
 Data File: Startup.draw.data.1394.vs_bus_b3.unused.bie
@@ -66,6 +66,24 @@ is relevant deployment context for an internal recorder, but it does not make
 BIE a FireTrac, FireSpy, or DAP-defined file format.
 
 ## Research log
+
+### 2026-08-29
+
+- Clarified that the fixture records are sanitized excerpts of known-good BIE
+  captures recorded using a FireSpy, not generated example messages.
+- Measured the Heartbeat at approximately 25.94 kcounts/s across the first and
+  final records. Its change is approximately the payload system-tick change
+  divided by `2^19`, yielding about 432 counts per 60 Hz payload update. This
+  ties the value to the producer clock family, not to the 80 Hz FireSpy sampling
+  cadence or a possible 100 Hz STOF rate.
+- Recorded the provided nominal system-clock calculation
+  `106.25e6 * 2^7 = 13.6e9` ticks/s. One payload timestamp LSB is therefore
+  `1 / (106.25e6 * 2^7)`, approximately 73.5294 picoseconds. The endpoint-based
+  fixture estimate is within approximately 0.0183% of that nominal rate.
+- Confirmed from AS5643 base-standard material that transmit and receive
+  assignments are offsets from STOF in one-microsecond increments. The exact
+  receive/datapump roles and tolerances still require the network-profile slash
+  sheet.
 
 ### 2026-08-28
 

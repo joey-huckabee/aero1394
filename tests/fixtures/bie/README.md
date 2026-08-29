@@ -1,9 +1,10 @@
 # BIE hexadecimal fixtures
 
-These whitespace-delimited hexadecimal files preserve sanitized simulation
-messages supplied during the 2026-08-28 BIE investigation. They are text so
-their exact bytes remain reviewable. A test helper should reject non-hex tokens
-and convert each pair to one byte before passing the result to a parser.
+These whitespace-delimited hexadecimal files preserve records derived from
+known-good BIE captures recorded using a FireSpy and sanitized for the
+repository during the 2026-08-28 investigation. They are text so their exact
+bytes remain reviewable. A test helper should reject non-hex tokens and convert
+each pair to one byte before passing the result to a parser.
 
 The fixtures describe the currently observed internal BIE record family. They
 are not a complete internal conformance corpus.

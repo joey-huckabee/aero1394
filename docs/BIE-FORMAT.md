@@ -243,7 +243,7 @@ The omitted ASM header is reconstructed for this record family as follows:
 The generic BIE parser continues to return `stored_data` as an opaque byte
 region. The AS5643 decoder applies profile
 `aero1394-assumed-as5643b-v1` only after the record family is selected.
-Heartbeat sequence evaluation, STOF-offset interpretation, and VPC validation
+Heartbeat freshness evaluation, STOF-offset interpretation, and VPC validation
 follow the linked AS5643 definitions; they are not BIE framing rules.
 
 ## Implementation dispositions

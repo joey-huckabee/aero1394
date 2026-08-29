@@ -1,7 +1,7 @@
 # Decoded output schemas
 
 - Status: Provisional design; no decoder or stable machine schema implemented
-- Last updated: 2026-08-28
+- Last updated: 2026-08-29
 
 ## Boundary
 
@@ -126,6 +126,8 @@ Candidate file metadata for a provisional tick conversion is:
 
 ```text
 aero1394.system_tick_rate_hz = "13600000000"
+aero1394.system_tick_period_ps = "73.5294117647"
+aero1394.system_tick_rate_basis = "106250000 * 2^7"
 aero1394.system_tick_rate_status = "inferred"
 ```
 
