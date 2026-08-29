@@ -22,6 +22,9 @@ The next increment is whole-file BIE record chaining and zero-word sentinel
 handling, exercised by the sanitized golden messages under
 `tests/fixtures/bie`.
 
+The scoped gates and incremental path for the first pre-`1.0.0` release are in
+the [`v0.1.0` release plan](docs/RELEASE-PLAN.md).
+
 See the [internal BIE format contract](docs/BIE-FORMAT.md) for the supported
 grammar, explicit field status, and unresolved status flag. Capture provenance
 and specification-development history are retained separately in the

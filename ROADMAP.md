@@ -15,6 +15,9 @@ before implementation begins.
 
 ## Complete the internal BIE path
 
+The bounded scope and exit gates for the first implementation release are
+defined in [`docs/RELEASE-PLAN.md`](docs/RELEASE-PLAN.md).
+
 ### Finish the BIE framing adapter
 
 The first record-level slice now parses explicit big-endian header fields,
