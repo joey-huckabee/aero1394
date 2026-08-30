@@ -151,20 +151,23 @@ guarantees.
 
 ## Evidence available for the next slice
 
-The internal BIE definition and supplied excerpts establish a 16-byte
-big-endian, length-delimited record header and zero-word EOF sentinel. The
-parser should implement that generic header and length boundary first,
-preserving each stored region and unresolved flag as raw evidence.
+The generic BIE parser and bounded reader preserve the confirmed container
+fields and exact stored regions. The BIE-independent `as5643` module now
+decodes the retained 116-byte representation for the explicitly selected
+`aero1394-assumed-as5643b-v1` profile. It exposes raw/reconstructed envelope
+fields and a borrowed 92-byte application region while retaining the complete
+input and assumption marker.
 
-Protocol-envelope interpretation and the future typed payload registry remain
-downstream operations. The definitive format contract is in `BIE-FORMAT.md`,
-its development provenance is in `BIE-EVIDENCE.md`, and payload knowledge is in
-`PAYLOADS.md`. Testable commitments are decomposed through `L1.md`, `L2.md`,
-and `L3.md`, with live status in `TRACE-MATRIX.md`.
+The next slice calculates VPC from explicit reconstruction inputs. BIE profile
+selection, CLI presentation, the typed payload registry, and application-field
+semantics remain downstream operations. The definitive contracts are in
+`BIE-FORMAT.md`, `AS5643.md`, and `PAYLOADS.md`; live verification status is in
+`TRACE-MATRIX.md`.
 
 ## Verification
 
-Unit tests cover bounds, offsets, EOF, explicit unbounded mode, zero-length
-requests, overflow, argument parsing, and rendering. CLI integration tests run
-the compiled binary against temporary captures. CI applies formatting,
-Clippy-with-warnings-denied, and all tests on Windows and Linux.
+Unit and integration tests cover forensic bounds, BIE framing/streaming,
+AS5643 profile selection and retained-size errors, golden raw envelope values,
+argument parsing, and rendering. CLI integration tests run the compiled binary
+against temporary captures. CI applies formatting, Clippy-with-warnings-denied,
+and all tests on Windows and Linux.

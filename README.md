@@ -18,11 +18,14 @@ or a strict complete BIE byte slice while preserving raw values, absolute
 offsets, and exact stored data. Whole-file parsing requires the four-byte zero
 sentinel and reports truncation, a missing terminator, or trailing bytes.
 The `records` CLI lists those raw BIE fields without assigning protocol
-semantics. Protocol decoding remains unimplemented.
+semantics. The `as5643` library module now decodes the confirmed retained
+116-byte representation under the explicit assumption-dependent profile while
+leaving its 92 application bytes opaque. VPC validation, BIE-to-profile CLI
+integration, and typed payload decoding are the next separate increments.
 
 The first initial-development release, [`v0.1.0`](https://github.com/joey-huckabee/aero1394/releases/tag/v0.1.0),
-is published with verified Windows and Linux archives and checksums. Protocol
-decoding remains evidence-gated future work.
+is published with verified Windows and Linux archives and checksums. Further
+protocol and payload semantics remain evidence-gated.
 
 The next scoped increments and evidence gates are in the
 [`v0.2.0` release plan](docs/RELEASE-PLAN-v0.2.0.md). Every development
