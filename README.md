@@ -20,8 +20,9 @@ sentinel and reports truncation, a missing terminator, or trailing bytes.
 The `records` CLI lists those raw BIE fields without assigning protocol
 semantics. Protocol decoding remains unimplemented.
 
-The next increment is `v0.1.0` release packaging: cross-platform release
-builds, archives, checksums, release notes, and packaged-binary smoke tests.
+The next release gate is remote confirmation of the Windows and Linux packages,
+followed by an explicit tag and publication decision. No tag or release is
+created automatically.
 
 The scoped gates and incremental path for the first pre-`1.0.0` release are in
 the [`v0.1.0` release plan](docs/RELEASE-PLAN.md).
@@ -69,6 +70,21 @@ Each hex-dump line contains a 16-digit absolute file offset, hexadecimal bytes,
 and an ASCII preview. The default 256-byte limit prevents an accidental
 terminal dump of a large recording. Hex-dump output contains source bytes and
 must be handled with the same sensitivity as the capture.
+
+## Build a release candidate
+
+After the locked release build, create and smoke-test a deterministic Windows
+archive and checksum with:
+
+```text
+cargo build --release --locked
+python scripts/package-release.py --platform windows-x86_64 --archive-format zip --binary target/release/aero1394.exe
+```
+
+CI runs the corresponding ZIP or `tar.gz` packaging path on Windows and Linux.
+Manual workflow runs and version tags retain the candidates as workflow
+artifacts, but do not publish a GitHub release. See the
+[`v0.1.0` release notes](docs/RELEASE-NOTES-v0.1.0.md) for the shipped boundary.
 
 See [Reverse-engineering BIE captures](docs/REVERSE-ENGINEERING.md) for the
 evidence workflow and [current architecture](docs/ARCHITECTURE.md) for the

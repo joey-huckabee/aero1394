@@ -66,8 +66,33 @@ Current hardening evidence:
   checks.
 - [x] Record inventory uses two bounded passes and retains at most one encoded
   BIE record plus fixed-size I/O buffers.
+- [x] Versioned release notes and deterministic ZIP/`tar.gz` plus SHA-256
+  tooling are committed.
+- [x] Repeated local Windows packaging produced the same SHA-256 digest, and
+  both ZIP and `tar.gz` extraction/smoke paths passed.
 - [ ] The locked Linux release build and packaged-binary smoke test pass in CI.
-- [ ] Release notes, archives, and SHA-256 checksums are generated.
+- [ ] Retained Windows and Linux workflow artifacts are manually inspected.
+- [ ] A clean CI-passing commit is explicitly tagged and published.
+
+## Artifact construction
+
+The cross-platform packaging command is:
+
+```text
+python scripts/package-release.py --platform <LABEL> --archive-format <zip|tar.gz> --binary <PATH>
+```
+
+It verifies the binary version and `records --help`, creates a normalized
+archive containing the binary, `LICENSE`, `README.md`, and versioned release
+notes, extracts and smoke-tests the packaged binary, and writes a sibling
+`.sha256` file. When running for a Git tag, it also requires the tag to equal
+`v` plus the Cargo package version.
+
+The existing CI matrix executes packaging on every Windows and Linux run.
+Artifacts are retained only for a manual workflow run or a `v*` tag. The
+workflow deliberately does not create a tag or publish a GitHub release; those
+remain explicit maintainer actions after both retained candidates are
+inspected.
 
 ## Release gates
 

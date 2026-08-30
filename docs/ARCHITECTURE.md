@@ -58,6 +58,13 @@ termination, trailing data, and offset overflow without performing validation,
 protocol interpretation, or recovery. `BieReader` composes the same record
 parser with `Read` while bounding memory independently of source size.
 
+Release packaging is a repository adapter implemented in
+`scripts/package-release.py`. It verifies the compiled binary, creates a
+timestamp-normalized ZIP or `tar.gz` containing the binary, license, readme,
+and release notes, extracts that archive, smoke-tests the packaged binary, and
+writes a sibling SHA-256 file. Normal CI runs both platform packaging paths;
+manual runs and version tags retain artifacts without publishing a release.
+
 ## Dependency direction
 
 The binary depends on the library. The library never depends on the binary,
