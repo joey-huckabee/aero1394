@@ -22,6 +22,7 @@ use std::process::ExitCode;
 
 const DEFAULT_LENGTH: u64 = 256;
 const DEFAULT_WIDTH: usize = 16;
+const WARNING_EXIT_CODE: u8 = 2;
 
 const GENERAL_HELP: &str = "\
 Aero1394 forensic capture inspection
@@ -93,7 +94,12 @@ The file must end at its four-byte zero terminator. Only the explicit
 0x00005D04 plus 116-byte mapping is decoded. Other data-item identities and
 stored-data lengths remain successful, inspectable records labeled unsupported.
 Mapped application bytes are checked against the built-in payload registry;
-registered payloads expose raw primitive fields without inferred engineering semantics.
+registered payloads expose retained raw fields plus explicitly labeled provisional semantics.
+
+Exit status:
+  0    Successful decode with no warnings
+  1    Usage, I/O, framing, or decoding error
+  2    Successful decode with one or more payload warnings
 ";
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -136,6 +142,12 @@ enum AppError {
     Io { context: String, source: io::Error },
     Hexdump(HexdumpError),
     Bie(BieReadError),
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum AppOutcome {
+    Success,
+    Warnings { count: usize },
 }
 
 impl AppError {
@@ -199,11 +211,15 @@ impl From<BieReadError> for AppError {
 
 fn main() -> ExitCode {
     match run() {
-        Ok(()) => ExitCode::SUCCESS,
+        Ok(AppOutcome::Success) => ExitCode::SUCCESS,
+        Ok(AppOutcome::Warnings { count }) => {
+            eprintln!("warning: decoded successfully with {count} payload warning(s)");
+            ExitCode::from(WARNING_EXIT_CODE)
+        }
         Err(error) if error.is_broken_pipe() => ExitCode::SUCCESS,
         Err(AppError::Usage(message)) => {
             eprintln!("error: {message}\n\nTry 'aero1394 --help' for usage.");
-            ExitCode::from(2)
+            ExitCode::FAILURE
         }
         Err(error) => {
             eprintln!("error: {error}");
@@ -212,35 +228,36 @@ fn main() -> ExitCode {
     }
 }
 
-fn run() -> Result<(), AppError> {
+fn run() -> Result<AppOutcome, AppError> {
     let mut arguments = env::args_os().skip(1);
     let Some(command) = arguments.next() else {
-        return write_stdout(GENERAL_HELP);
+        return write_stdout(GENERAL_HELP).map(|()| AppOutcome::Success);
     };
 
     if command == "-h" || command == "--help" {
-        return write_stdout(GENERAL_HELP);
+        return write_stdout(GENERAL_HELP).map(|()| AppOutcome::Success);
     }
     if command == "-V" || command == "--version" {
-        return write_stdout(&format!("aero1394 {}\n", env!("CARGO_PKG_VERSION")));
+        return write_stdout(&format!("aero1394 {}\n", env!("CARGO_PKG_VERSION")))
+            .map(|()| AppOutcome::Success);
     }
     if command == "hexdump" {
         let Some(arguments) = parse_hexdump_args(arguments)? else {
-            return write_stdout(HEXDUMP_HELP);
+            return write_stdout(HEXDUMP_HELP).map(|()| AppOutcome::Success);
         };
-        return execute_hexdump(&arguments);
+        return execute_hexdump(&arguments).map(|()| AppOutcome::Success);
     }
 
     if command == "records" {
         let Some(arguments) = parse_records_args(arguments)? else {
-            return write_stdout(RECORDS_HELP);
+            return write_stdout(RECORDS_HELP).map(|()| AppOutcome::Success);
         };
-        return execute_records(&arguments);
+        return execute_records(&arguments).map(|()| AppOutcome::Success);
     }
 
     if command == "as5643" {
         let Some(arguments) = parse_as5643_args(arguments)? else {
-            return write_stdout(AS5643_HELP);
+            return write_stdout(AS5643_HELP).map(|()| AppOutcome::Success);
         };
         return execute_as5643(&arguments);
     }
@@ -535,17 +552,24 @@ fn execute_records(arguments: &RecordsArgs) -> Result<(), AppError> {
         .map_err(|error| AppError::io("could not flush BIE record inventory", error))
 }
 
-fn execute_as5643(arguments: &As5643Args) -> Result<(), AppError> {
+fn execute_as5643(arguments: &As5643Args) -> Result<AppOutcome, AppError> {
     let mut record_reader = validated_bie_reader(&arguments.path)?;
     let stdout = io::stdout();
     let mut output = BufWriter::new(stdout.lock());
     let mut record_count = 0_usize;
+    let mut warning_count = 0_usize;
 
     loop {
         match record_reader.next_item()? {
             Some(BieReadItem::Record(record)) => {
-                render_as5643_record(&mut output, record_count, &record).map_err(|error| {
-                    AppError::io("could not write AS5643 record inventory", error)
+                let record_warnings = render_as5643_record(&mut output, record_count, &record)
+                    .map_err(|error| {
+                        AppError::io("could not write AS5643 record inventory", error)
+                    })?;
+                warning_count = warning_count.checked_add(record_warnings).ok_or_else(|| {
+                    AppError::Operation(
+                        "payload warning count cannot be represented by usize".into(),
+                    )
                 })?;
                 record_count = checked_record_count(record_count)?;
             }
@@ -561,7 +585,15 @@ fn execute_as5643(arguments: &As5643Args) -> Result<(), AppError> {
 
     output
         .flush()
-        .map_err(|error| AppError::io("could not flush AS5643 record inventory", error))
+        .map_err(|error| AppError::io("could not flush AS5643 record inventory", error))?;
+
+    if warning_count == 0 {
+        Ok(AppOutcome::Success)
+    } else {
+        Ok(AppOutcome::Warnings {
+            count: warning_count,
+        })
+    }
 }
 
 fn validated_bie_reader(path: &Path) -> Result<BieReader<BufReader<File>>, AppError> {
@@ -619,7 +651,7 @@ fn render_as5643_record(
     output: &mut impl Write,
     index: usize,
     record: &BieRecord<'_>,
-) -> io::Result<()> {
+) -> io::Result<usize> {
     write!(
         output,
         "record={index} offset=0x{:016X} data_item_id=0x{:08X} recorder_seconds={} recorder_microseconds={} status_and_length=0x{:08X} unresolved_flags=0x{:08X} data_length={} as5643=",
@@ -662,29 +694,34 @@ fn render_as5643_record(
                 " vpc={}",
                 vpc_validation_label(validation.outcome())
             )?;
-            render_payload_selection(
+            let warning_count = render_payload_selection(
                 output,
                 select_payload(
                     PayloadContext::new(record.data_item_id().get()),
                     message.application_data(),
                 ),
             )?;
-            writeln!(output)
+            writeln!(output)?;
+            Ok(warning_count)
         }
         BieAs5643MappingOutcome::UnsupportedDataItem => {
-            writeln!(output, "unsupported reason=data_item_id")
+            writeln!(output, "unsupported reason=data_item_id")?;
+            Ok(0)
         }
-        BieAs5643MappingOutcome::UnsupportedStoredDataLength { expected, actual } => writeln!(
-            output,
-            "unsupported reason=stored_data_length expected={expected} actual={actual}"
-        ),
+        BieAs5643MappingOutcome::UnsupportedStoredDataLength { expected, actual } => {
+            writeln!(
+                output,
+                "unsupported reason=stored_data_length expected={expected} actual={actual}"
+            )?;
+            Ok(0)
+        }
     }
 }
 
 fn render_payload_selection(
     output: &mut impl Write,
     selection: PayloadSelection<'_, '_>,
-) -> io::Result<()> {
+) -> io::Result<usize> {
     match selection {
         PayloadSelection::Matched(matched) => {
             let definition = matched.definition();
@@ -698,23 +735,45 @@ fn render_payload_selection(
             )?;
             match matched.decode() {
                 Ok(KnownPayload::MsfcsStoresMassDataB(payload)) => {
+                    let warnings = payload.warnings();
                     write!(
                         output,
-                        " payload_decode=raw_fields system_ticks={} message_valid=0x{:02X} eots_present=0x{:02X} spare_byte=0x{:02X} cm_present=0x{:02X}",
+                        " payload_decode=raw_fields system_ticks={} system_elapsed_seconds_provisional={:.12} system_tick_rate_hz={} system_time_epoch=system_startup_unconfirmed message_valid=0x{:02X} message_valid_interpreted={} payload_values_valid={} eots_present=0x{:02X} eots_present_interpreted={} spare_byte=0x{:02X} cm_present=0x{:02X} cm_present_interpreted={} payload_warning_count={}",
                         payload.system_ticks().get(),
+                        payload.system_ticks().provisional_elapsed_seconds(),
+                        aero1394::payload::msfcs_storesmassdata_b::NOMINAL_SYSTEM_TICK_RATE_HZ,
                         payload.message_valid().get(),
+                        boolean_label(payload.message_valid().as_bool()),
+                        boolean_label(payload.message_valid().as_bool()),
                         payload.eots_present().get(),
+                        boolean_label(payload.eots_present().as_bool()),
                         payload.spare_byte().get(),
                         payload.cm_present().get(),
+                        boolean_label(payload.cm_present().as_bool()),
+                        warnings.len(),
                     )?;
+                    if !warnings.is_empty() {
+                        output.write_all(b" payload_warnings=")?;
+                        for (index, warning) in warnings.iter().enumerate() {
+                            if index > 0 {
+                                output.write_all(b",")?;
+                            }
+                            write!(output, "{warning}")?;
+                        }
+                    }
                     render_stores_mass_data(output, "current", payload.current_stores_mass_data())?;
-                    render_stores_mass_data(output, "post_ej", payload.post_ej_stores_mass_data())
+                    render_stores_mass_data(output, "post_ej", payload.post_ej_stores_mass_data())?;
+                    Ok(warnings.len())
                 }
-                Err(_) => output.write_all(b" payload_decode=unavailable"),
+                Err(_) => {
+                    output.write_all(b" payload_decode=unavailable")?;
+                    Ok(0)
+                }
             }
         }
         PayloadSelection::Unknown(raw) => {
-            write!(output, " payload=unknown payload_size={}", raw.size())
+            write!(output, " payload=unknown payload_size={}", raw.size())?;
+            Ok(0)
         }
         PayloadSelection::Ambiguous(ambiguous) => {
             write!(
@@ -728,8 +787,16 @@ fn render_payload_selection(
                 }
                 write!(output, "{}@{}", definition.name(), definition.version())?;
             }
-            Ok(())
+            Ok(0)
         }
+    }
+}
+
+const fn boolean_label(value: Option<bool>) -> &'static str {
+    match value {
+        Some(true) => "true",
+        Some(false) => "false",
+        None => "unknown",
     }
 }
 

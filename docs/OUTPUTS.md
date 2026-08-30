@@ -21,11 +21,18 @@ the structured validation outcome. For a mapped envelope, the line also reports
 the built-in payload-selection outcome and, for one match, its stable name,
 Aero1394 definition version, exact size, and byte order. This is registry
 recognition followed by typed raw decoding for `msfcs_storesmassdata_b`. Its
-system ticks, four Boolean-designated bytes, and twenty unscaled float values
-are printed with explicit names. Exact float bits and the complete application
-bytes remain available in the Rust model. The text assigns no units, Boolean
-polarity, validity meaning, or timestamp epoch. Unsupported IDs and stored sizes
-remain successful inventory lines with explicit reasons.
+system ticks, provisional elapsed seconds, raw and interpreted Boolean values,
+validity state, and twenty unscaled float values are printed with explicit
+names. Exact float bits and the complete application bytes remain available in
+the Rust model. The text assigns no engineering units or confirmed timestamp
+epoch. Unsupported IDs and stored sizes remain successful inventory lines with
+explicit reasons.
+
+Payload semantic warnings are attached to their inventory line and summarized
+on standard error. Every field remains decoded and displayed. CLI process exit
+codes are `0` for clean success, `1` for an error, and `2` for successful decode
+with warnings. This intentionally reserves code `2` for warnings; command-line
+usage errors use code `1`.
 
 This text is deliberately not a versioned machine schema. Formatting may
 change as the CLI evolves; scripts should wait for the separately versioned CSV
@@ -50,7 +57,9 @@ choices. Intended formats include:
 The recorder-summary form is interpreted as `DD:HH:MM:SS.ffffff` using the
 separately known recording date. It is ambiguous without that date. Payload
 system ticks are a different time domain and are never rendered as a calendar
-date without a confirmed epoch.
+date without a confirmed epoch. The human inventory also reports provisional
+elapsed seconds using `ticks / 13,600,000,000`, identifies the nominal tick
+rate, and labels the system-startup epoch hypothesis unconfirmed.
 
 ## Provisional CSV
 

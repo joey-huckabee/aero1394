@@ -41,12 +41,19 @@ authoritative record of work accumulated before release.
   bytes and float bit patterns retained.
 - Populated and sparse payload-only golden fixtures plus raw field presentation
   in the `as5643` CLI.
+- Additive provisional payload semantics: strict `0`/`1` Boolean decoding,
+  message-valid state, informational presence flags, reserved-byte checks,
+  direct unscaled IEEE-754 values, and system ticks expressed as provisional
+  elapsed seconds at the documented nominal 13.6 GHz rate.
+- Non-fatal payload findings that retain and display every decoded field, with
+  CLI exit codes `0` for clean success, `1` for errors, and `2` for successful
+  decoding with warnings.
 
 ## Still planned
 
-- engineering interpretation of `msfcs_storesmassdata_b` after source metadata
-  and the remaining Boolean, unit, coordinate/reference, validity, and epoch
-  semantics are confirmed.
+- confirmed engineering interpretation of `msfcs_storesmassdata_b` after the
+  remaining unit, coordinate/reference, acronym, group-meaning, and epoch
+  semantics are supplied.
 
 ## Evidence boundary
 

@@ -67,7 +67,11 @@ fn as5643_lists_mapped_envelope_and_vpc_values() {
         "record=0 offset=0x0000000000000000 data_item_id=0x00005D04 recorder_seconds=1722431146 recorder_microseconds=271487 status_and_length=0x00000074 unresolved_flags=0x00000000 data_length=116 as5643=mapped profile=aero1394-assumed-as5643b-v1 assumption_dependent=true message_id=0x00005D04 reserved_security=0x00000000 node_id=0x00000000 priority_and_payload_length=0x00000064 health_status=0x00000000 heartbeat=0x049CBDEE application_length=92 stof_transmit_offset=1400 stof_receive_offset=500 stof_datapump_offset=500 stored_vpc=0xED45F5A5 calculated_vpc=0xED45F5A5 vpc=valid payload=matched payload_name=msfcs_storesmassdata_b payload_definition=layout-v1 payload_size=92 payload_byte_order=big-endian"
     ));
     assert!(lines[0].contains(
-        "payload_decode=raw_fields system_ticks=40569929459396 message_valid=0x01 eots_present=0x00 spare_byte=0x00 cm_present=0x00"
+        "payload_decode=raw_fields system_ticks=40569929459396 system_elapsed_seconds_provisional="
+    ));
+    assert!(lines[0].contains("system_tick_rate_hz=13600000000"));
+    assert!(lines[0].contains(
+        "message_valid=0x01 message_valid_interpreted=true payload_values_valid=true eots_present=0x00 eots_present_interpreted=false spare_byte=0x00 cm_present=0x00 cm_present_interpreted=false payload_warning_count=0"
     ));
     assert!(lines[0].contains("current_weight=5603.02 current_cg_fs=490"));
     assert!(lines[0].ends_with("post_ej_iyz=-8 post_ej_ixz=40"));
@@ -78,6 +82,37 @@ fn as5643_lists_mapped_envelope_and_vpc_values() {
         "payload=matched payload_name=msfcs_storesmassdata_b payload_definition=layout-v1"
     ));
     assert_eq!(lines[4], "terminator_offset=0x0000000000000210 records=4");
+}
+
+/// Requirements: L3-TIM-008, L3-PAY-014, L3-OUT-002, L3-OUT-007
+#[test]
+fn as5643_decodes_warning_bearing_payloads_and_returns_exit_code_two() {
+    let mut bytes = fixture_bytes(include_str!("fixtures/bie/startup-four-records.hex"));
+    bytes.extend_from_slice(&[0; 4]);
+
+    let output = run_as5643("payload-warnings", &bytes);
+
+    assert_eq!(
+        output.status.code(),
+        Some(2),
+        "stdout={} stderr={}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8(output.stdout).expect("ASCII stdout");
+    let lines = stdout.lines().collect::<Vec<_>>();
+    assert_eq!(lines.len(), 5);
+    for line in &lines[..4] {
+        assert!(line.contains("message_valid=0x00 message_valid_interpreted=false"));
+        assert!(line.contains("payload_values_valid=false"));
+        assert!(line.contains("payload_warning_count=1 payload_warnings=message_invalid"));
+        assert!(line.contains("current_weight="));
+        assert!(line.contains("post_ej_ixz="));
+    }
+    assert_eq!(
+        String::from_utf8(output.stderr).expect("ASCII stderr"),
+        "warning: decoded successfully with 4 payload warning(s)\n"
+    );
 }
 
 /// Requirements: L3-BIE-007, L3-BIE-008, L3-BIE-009, L3-OUT-002
