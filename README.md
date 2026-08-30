@@ -9,7 +9,7 @@ record family and its implementation contract.
 
 ## Project status
 
-**Stage 1 forensic inspection implemented; Stage 2 framing underway.**
+**Stage 1 forensic inspection and Stage 2 BIE framing implemented.**
 The Rust library and CLI perform bounded, offset-aware hex inspection. Supplied
 simulation excerpts and recorder summary metadata establish a 16-byte
 big-endian header and length-delimited stored data for the observed record
@@ -20,9 +20,9 @@ sentinel and reports truncation, a missing terminator, or trailing bytes.
 The `records` CLI lists those raw BIE fields without assigning protocol
 semantics. Protocol decoding remains unimplemented.
 
-The release candidate has passed remote Windows/Linux packaging and retained
-artifact inspection. The next gate is an explicit tag and publication
-decision. No tag or release is created automatically.
+The first initial-development release, [`v0.1.0`](https://github.com/joey-huckabee/aero1394/releases/tag/v0.1.0),
+is published with verified Windows and Linux archives and checksums. Protocol
+decoding remains evidence-gated future work.
 
 The scoped gates and incremental path for the first pre-`1.0.0` release are in
 the [`v0.1.0` release plan](docs/RELEASE-PLAN.md).
@@ -83,7 +83,8 @@ python scripts/package-release.py --platform windows-x86_64 --archive-format zip
 
 CI runs the corresponding ZIP or `tar.gz` packaging path on Windows and Linux.
 Manual workflow runs and version tags retain the candidates as workflow
-artifacts, but do not publish a GitHub release. See the
+artifacts, but do not publish a GitHub release; `v0.1.0` was published manually
+after artifact inspection. See the
 [`v0.1.0` release notes](docs/RELEASE-NOTES-v0.1.0.md) for the shipped boundary.
 
 See [Reverse-engineering BIE captures](docs/REVERSE-ENGINEERING.md) for the

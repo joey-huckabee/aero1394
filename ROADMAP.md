@@ -18,16 +18,6 @@ before implementation begins.
 The bounded scope and exit gates for the first implementation release are
 defined in [`docs/RELEASE-PLAN.md`](docs/RELEASE-PLAN.md).
 
-### Harden the `v0.1.0` release
-
-Complete the final release-plan increment:
-
-- tag only the clean, CI-passing release commit; and
-- publish the verified artifacts without changing their bytes.
-
-Exit gate: every functional, verification, documentation, and packaging item
-in [`docs/RELEASE-PLAN.md`](docs/RELEASE-PLAN.md) is satisfied.
-
 ### Resolve BIE status flag `0x40000000`
 
 The high flag appears in the second and third records of both supplied

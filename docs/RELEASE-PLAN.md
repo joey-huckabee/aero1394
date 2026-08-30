@@ -1,6 +1,6 @@
 # Aero1394 v0.1.0 release plan
 
-- Status: Active
+- Status: Complete
 - Target: `v0.1.0`
 - Stability: Initial development release; public APIs may evolve before `1.0.0`
 - Last updated: 2026-08-29
@@ -53,7 +53,7 @@ contracts, not claims about `v0.1.0` runtime behavior.
 | 1. Record framing | Parse one complete non-terminator record without copying its stored data. | Unit boundaries and known-good startup fixture; commit `5b8f0c9`. | Complete |
 | 2. File framing | Parse a strict complete BIE slice through its sentinel. | Multi-record, empty, end-fixture, truncation, missing-terminator, trailing-data, and overflow tests. | Complete |
 | 3. Record inventory CLI | List record number, offset, ID, recorder time, raw status, flags, and body length. | CLI success/error integration tests using sanitized fixtures. | Complete |
-| 4. Release hardening | Make large-input behavior and distributable binaries reproducible. | Bounded streaming, exact CI checks, release builds on Windows and Linux, CLI help review, release notes, and packaged-artifact smoke tests. | In progress |
+| 4. Release hardening | Bound large-input behavior and produce verified distributable binaries. | Bounded streaming, exact CI checks, release builds on Windows and Linux, CLI help review, release notes, and packaged-artifact smoke tests. | Complete |
 
 Each increment must remain independently functional and receive its own
 reviewable commit. Protocol interpretation will begin only after this release
@@ -75,7 +75,12 @@ Current hardening evidence:
 - [x] Retained Windows and Linux artifacts from workflow run `33284770282`
   were downloaded; both checksums matched, the expected members were present,
   and the downloaded Windows binary repeated the CLI smoke tests.
-- [ ] A clean CI-passing commit is explicitly tagged and published.
+- [x] Clean commit `0348121` passed tag workflow run `33285431053`, was tagged
+  `v0.1.0`, and was published with four independently verified release assets.
+- [x] The tag-built Linux archive matched the final candidate byte-for-byte.
+  The Windows executable differed between builds only in MSVC-generated
+  PE/CodeView timestamps and its PDB GUID; the tag-built ZIP and checksum are
+  the authoritative published Windows artifacts.
 
 ## Artifact construction
 
