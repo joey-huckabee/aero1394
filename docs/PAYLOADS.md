@@ -1,6 +1,6 @@
 # Built-in application payloads
 
-- Status: Registry implemented and complete field layout supplied; engineering semantics pending
+- Status: Registry and raw field decoder implemented; engineering semantics pending
 - Last updated: 2026-08-30
 - Applies to: application bytes located after BIE and protocol framing
 
@@ -34,13 +34,14 @@ The implemented registry source layout is:
 ```text
 src/payload/
   mod.rs                         public payload boundary
+  field.rs                       field metadata and layout validation
   registry.rs                    deterministic definition selection
-  msfcs_storesmassdata_b.rs      first built-in identity and size definition
+  msfcs_storesmassdata_b.rs      first built-in definition and raw decoder
 ```
 
 Every payload module must declare its identity, version, match criteria, byte
 order, total size, and explicit field ranges. It decodes from a checked byte
-slice and preserves raw values. The complete payload layer will return a typed
+slice and preserves raw values. The complete payload layer returns a typed
 known-payload variant, an explicit ambiguous-match result, or an unknown
 payload containing the original bytes.
 
@@ -56,9 +57,19 @@ in stable registry order.
 The built-in `msfcs_storesmassdata_b` entry uses Aero1394 definition version
 `layout-v1`. That label versions the supplied layout within this project and is
 not asserted to be the still-unconfirmed source-document revision. The entry
-currently declares identity, exact size, and byte order. Its field decoder and
-field-range declarations are the next increment, so a registry match must not
-be presented as a completed application decode.
+declares identity, exact size, byte order, and all 25 field ranges. Its raw
+decoder is returned through the typed `KnownPayload::MsfcsStoresMassDataB`
+variant after one unambiguous registry match.
+
+Field layout validation rejects offset overflow, out-of-bounds ranges, and any
+overlap; successful validation reports uncovered byte ranges. The supplied
+layout covers all 92 bytes without gaps. Decoding requires exactly 92 bytes and
+uses checked big-endian slice reads. `SystemTicks` retains the unsigned
+`TimeStamp`, `RawBooleanByte` retains each source-designated Boolean byte, and
+`RawF32` retains the exact IEEE-754 bits while exposing the corresponding
+unscaled `f32`. The typed result also borrows all original application bytes.
+None of those primitive interpretations supplies an epoch, Boolean polarity,
+validity relationship, scaling, units, or coordinate/reference convention.
 
 No payload module may reach backward into BIE parsing. The layers interact like
 this:
@@ -272,8 +283,8 @@ the raw ticks remain canonical.
 
 ### Field-to-fixture correlation
 
-The populated final fixture has four zero-valued Boolean bytes followed by the
-twenty supplied floating-point fields. Decoding the words as big-endian
+The populated final fixture has Boolean-designated bytes `01 00 00 00` followed
+by the twenty supplied floating-point fields. Decoding the words as big-endian
 IEEE-754 `f32` values produces:
 
 | Field | Hex | Value |
@@ -299,12 +310,18 @@ IEEE-754 `f32` values produces:
 | `PostEJStoresMassData.Iyz` | `C1000000` | `-8.0` |
 | `PostEJStoresMassData.Ixz` | `42200000` | `40.0` |
 
-The sparse startup fixture populates only a few positions, including `450.0`
-and `62.5`, while preserving the same 92-byte structure. This supports one
-stable payload layout whose values become populated during initialization. The
-supplied table now establishes the field names, types, and offsets; the capture
-values independently corroborate the big-endian interpretation. Neither source
-yet establishes units, scaling, Boolean encoding, or validity relationships.
+The sparse startup fixture uses Boolean-designated bytes `00 01 00 00` and
+populates only a few float positions, including `450.0` and `62.5`, while
+preserving the same 92-byte structure. This supports one stable payload layout
+whose values become populated during initialization. The supplied table now
+establishes the field names, types, and offsets; the capture values independently
+corroborate the big-endian interpretation. Neither source yet establishes
+units, scaling, Boolean encoding, polarity, or validity relationships.
+
+Payload-only derivatives of those two authorized messages and their exact
+provenance are retained under
+`tests/fixtures/payload/msfcs_storesmassdata_b/`. Golden tests compare the
+timestamp, all four bytes, and all twenty float bit patterns field by field.
 
 ## Primitive and engineering representations
 

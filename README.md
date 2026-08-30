@@ -25,7 +25,9 @@ item `0x00005D04` with exactly 116 stored bytes, and the `as5643` CLI exposes
 the decoded envelope and VPC finding without changing generic BIE parsing. A
 separate deterministic payload registry now recognizes the 92-byte
 `msfcs_storesmassdata_b` layout and preserves unknown or ambiguous application
-bytes. Typed field decoding remains the next evidence-gated increment.
+bytes. Its raw decoder exposes the unsigned system ticks, four uninterpreted
+Boolean-designated bytes, and twenty unscaled big-endian `f32` fields while
+retaining every original bit. Engineering interpretation remains evidence-gated.
 
 The first initial-development release, [`v0.1.0`](https://github.com/joey-huckabee/aero1394/releases/tag/v0.1.0),
 is published with verified Windows and Linux archives and checksums. Further
@@ -88,8 +90,9 @@ assumption marker, reconstructed ASM-header words, Health Status, Heartbeat,
 application length, STOF offsets, stored/calculated VPC, and validation result.
 For a mapped envelope, it also reports whether the application bytes matched a
 built-in payload definition, including the definition name, Aero1394 layout
-version, exact size, and byte order. A match identifies the layout only; it does
-not yet claim that the application fields were decoded.
+version, exact size, and byte order. The registered Stores Mass payload also
+prints all raw primitive fields. Float values have no assigned units, Boolean
+bytes have no assigned polarity, and system ticks have no assigned epoch.
 Unknown data-item IDs and a known ID with another stored-data length are
 reported as `unsupported` while remaining successful inspectable records. This
 human-readable output is not yet a stable machine schema.

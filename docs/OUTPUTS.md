@@ -20,8 +20,12 @@ raw AS5643 envelope fields, application length, stored and calculated VPC, and
 the structured validation outcome. For a mapped envelope, the line also reports
 the built-in payload-selection outcome and, for one match, its stable name,
 Aero1394 definition version, exact size, and byte order. This is registry
-recognition rather than field decoding. Unsupported IDs and stored sizes remain
-successful inventory lines with explicit reasons.
+recognition followed by typed raw decoding for `msfcs_storesmassdata_b`. Its
+system ticks, four Boolean-designated bytes, and twenty unscaled float values
+are printed with explicit names. Exact float bits and the complete application
+bytes remain available in the Rust model. The text assigns no units, Boolean
+polarity, validity meaning, or timestamp epoch. Unsupported IDs and stored sizes
+remain successful inventory lines with explicit reasons.
 
 This text is deliberately not a versioned machine schema. Formatting may
 change as the CLI evolves; scripts should wait for the separately versioned CSV

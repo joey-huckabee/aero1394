@@ -2,7 +2,7 @@ use aero1394::bie::parse_file;
 use aero1394::bie_as5643::{BieAs5643MappingOutcome, map_bie_record_to_as5643};
 use aero1394::forensic::FileOffset;
 use aero1394::payload::msfcs_storesmassdata_b;
-use aero1394::payload::{PayloadContext, PayloadSelection, select_payload};
+use aero1394::payload::{KnownPayload, PayloadContext, PayloadSelection, select_payload};
 
 fn fixture_bytes(text: &str) -> Vec<u8> {
     text.split_whitespace()
@@ -39,6 +39,11 @@ fn selects_the_stores_mass_definition_after_protocol_decoding() {
     assert_eq!(*matched.definition(), msfcs_storesmassdata_b::DEFINITION);
     assert_eq!(matched.raw().bytes(), message.application_data());
     assert_eq!(matched.raw().size(), msfcs_storesmassdata_b::PAYLOAD_SIZE);
+    let KnownPayload::MsfcsStoresMassDataB(payload) = matched
+        .decode()
+        .expect("built-in match has a typed decoder");
+    assert_eq!(payload.raw_bytes(), message.application_data());
+    assert_eq!(payload.message_valid().get(), 0x01);
 }
 
 /// Requirements: L3-PAY-004, L3-PAY-005, L3-PAY-006, L3-TST-005

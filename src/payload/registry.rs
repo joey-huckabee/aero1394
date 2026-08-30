@@ -1,4 +1,7 @@
+use super::PayloadFieldDefinition;
 use super::msfcs_storesmassdata_b;
+use std::error::Error;
+use std::fmt;
 
 /// Byte order declared by a payload definition.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -87,6 +90,7 @@ pub struct PayloadDefinition {
     data_item_id: u32,
     payload_size: usize,
     byte_order: PayloadByteOrder,
+    fields: &'static [PayloadFieldDefinition],
     data_code: Option<&'static str>,
     configuration: Option<&'static str>,
 }
@@ -107,9 +111,17 @@ impl PayloadDefinition {
             data_item_id,
             payload_size,
             byte_order,
+            fields: &[],
             data_code: None,
             configuration: None,
         }
+    }
+
+    /// Declares the explicit fields owned by this definition.
+    #[must_use]
+    pub const fn with_fields(mut self, fields: &'static [PayloadFieldDefinition]) -> Self {
+        self.fields = fields;
+        self
     }
 
     /// Requires an exact data code in addition to identity and size.
@@ -154,6 +166,12 @@ impl PayloadDefinition {
     #[must_use]
     pub const fn byte_order(self) -> PayloadByteOrder {
         self.byte_order
+    }
+
+    /// Returns every field in authoritative definition order.
+    #[must_use]
+    pub const fn fields(self) -> &'static [PayloadFieldDefinition] {
+        self.fields
     }
 
     /// Returns the optional required data code.
@@ -225,6 +243,64 @@ impl<'definitions, 'payload> MatchedPayload<'definitions, 'payload> {
     #[must_use]
     pub const fn raw(self) -> RawPayload<'payload> {
         self.raw
+    }
+
+    /// Decodes the selected built-in definition into its typed raw fields.
+    pub fn decode(self) -> Result<KnownPayload<'payload>, MatchedPayloadDecodeError> {
+        if *self.definition == msfcs_storesmassdata_b::DEFINITION {
+            return msfcs_storesmassdata_b::decode(self.raw.bytes())
+                .map(KnownPayload::MsfcsStoresMassDataB)
+                .map_err(MatchedPayloadDecodeError::MsfcsStoresMassDataB);
+        }
+
+        Err(MatchedPayloadDecodeError::UnsupportedDefinition {
+            name: self.definition.name(),
+            version: self.definition.version(),
+        })
+    }
+}
+
+/// Typed raw payloads supported by the built-in registry.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum KnownPayload<'a> {
+    /// Raw fields from the supplied `msfcs_storesmassdata_b` layout.
+    MsfcsStoresMassDataB(msfcs_storesmassdata_b::MsfcsStoresMassDataB<'a>),
+}
+
+/// Failure to decode a definition after an unambiguous registry match.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum MatchedPayloadDecodeError {
+    /// A caller-created registry definition has no built-in typed decoder.
+    UnsupportedDefinition {
+        /// Stable definition name.
+        name: &'static str,
+        /// Stable definition version.
+        version: &'static str,
+    },
+    /// The Stores Mass raw decoder rejected its definition or bytes.
+    MsfcsStoresMassDataB(msfcs_storesmassdata_b::DecodeError),
+}
+
+impl fmt::Display for MatchedPayloadDecodeError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::UnsupportedDefinition { name, version } => {
+                write!(
+                    formatter,
+                    "payload definition {name}@{version} has no built-in decoder"
+                )
+            }
+            Self::MsfcsStoresMassDataB(error) => error.fmt(formatter),
+        }
+    }
+}
+
+impl Error for MatchedPayloadDecodeError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::UnsupportedDefinition { .. } => None,
+            Self::MsfcsStoresMassDataB(error) => Some(error),
+        }
     }
 }
 

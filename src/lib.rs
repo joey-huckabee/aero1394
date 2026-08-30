@@ -7,7 +7,8 @@
 //! types. A separate adapter maps only explicitly supported BIE identities and
 //! layouts to that profile while preserving unsupported records. The payload
 //! registry independently selects compiled-in definitions while retaining raw
-//! bytes for unknown and ambiguous inputs.
+//! bytes for unknown and ambiguous inputs. Its first typed decoder exposes all
+//! raw `msfcs_storesmassdata_b` fields without inferring engineering semantics.
 
 #![forbid(unsafe_code)]
 

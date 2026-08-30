@@ -40,7 +40,8 @@ in this release.
 | 2. Integrity | Calculate VPC from explicit reconstructed header inputs and return valid, invalid, absent, or unchecked outcomes. | Known-good and mutated fixtures with stored/calculated values retained. | Complete |
 | 3. BIE integration | Map only the supported BIE identity/size/profile combination and expose decoded envelope values without changing generic BIE parsing. | Unknown ID and wrong-size fallbacks plus CLI integration tests. | Complete |
 | 4. Payload registry | Select payload definitions deterministically and distinguish one match, no match, and ambiguity. | Registry tests covering all three outcomes and raw unknown preservation. | Complete |
-| 5. First payload | Decode all 92 bytes of `msfcs_storesmassdata_b` with authoritative names, types, ranges, units, and validity rules. | Authorized field table, sanitized golden values, boundary/byte-order tests, and updated traceability. | Next; field map received, semantics pending |
+| 5a. First payload raw fields | Decode all 92 bytes of `msfcs_storesmassdata_b` with supplied names, primitive types, exact ranges, and preserved raw values. | Sanitized populated/sparse golden values, exact-length and byte-order tests, definition validation, and updated traceability. | Complete |
+| 5b. First payload engineering semantics | Apply confirmed units, coordinate/reference conventions, Boolean polarity, validity rules, and timestamp epoch without replacing raw values. | Authorized source metadata and independent expected engineering values. | Evidence inputs pending |
 | 6. Release hardening | Package and inspect `v0.2.0` on Windows and Linux. | Exact CI gates, release notes, checksums, packaged-binary smoke tests, tag-run inspection, and changelog finalization. | Planned |
 
 Each increment must be independently functional, update `CHANGELOG.md`, and

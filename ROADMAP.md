@@ -20,11 +20,11 @@ and exit gates are defined in
 [`docs/RELEASE-PLAN-v0.2.0.md`](docs/RELEASE-PLAN-v0.2.0.md).
 
 Raw AS5643 envelope decoding, VPC validation, explicit BIE mapping, CLI
-presentation, and the deterministic built-in payload registry are implemented.
-The next increment is raw typed decoding for `msfcs_storesmassdata_b`. Its field
-layout is supplied, while source metadata and unresolved Boolean,
-engineering-unit, and validity semantics remain required before its complete
-engineering decoder can be called supported.
+presentation, the deterministic built-in payload registry, and raw typed
+decoding for every `msfcs_storesmassdata_b` field are implemented. The next
+payload increment is engineering interpretation. Source metadata and unresolved
+Boolean, engineering-unit, coordinate/reference, timestamp-epoch, and validity
+semantics remain required before that interpretation can be called supported.
 
 ## Extend the internal BIE path
 

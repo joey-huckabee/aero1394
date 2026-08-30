@@ -38,6 +38,15 @@ process must update the `Unreleased` section in the same commit.
 - Registered the 92-byte `msfcs_storesmassdata_b` identity as Aero1394 layout
   version `layout-v1` and added payload-recognition metadata to `as5643` CLI
   output without claiming that application fields have been decoded.
+- Added checked payload field metadata with explicit wire types and byte ranges,
+  including validation that rejects overlaps and out-of-bounds declarations and
+  reports uncovered gaps.
+- Added exact-length, big-endian raw decoding for every supplied
+  `msfcs_storesmassdata_b` field. System ticks, Boolean-designated bytes, exact
+  IEEE-754 `f32` bits, unscaled float values, and all 92 input bytes remain
+  accessible without inferred engineering semantics.
+- Added populated and sparse payload-only golden fixtures, typed registry
+  dispatch, and raw Stores Mass field presentation in the `as5643` CLI.
 - Added draft `v0.2.0` release notes so normal CI can package the in-development
   version without presenting it as released.
 
@@ -47,6 +56,9 @@ process must update the `Unreleased` section in the same commit.
   complete user-supplied 92-byte field table, confirming an unsigned timestamp,
   four Boolean elements, and twenty named floating-point fields while retaining
   unresolved units, Boolean encoding, and source metadata as explicit inputs.
+- Corrected the payload-fixture description: populated records contain the four
+  Boolean-designated bytes `01 00 00 00`, while sparse startup records contain
+  `00 01 00 00`; polarity and validity meanings remain unresolved.
 - Advanced project planning from the completed `v0.1.0` BIE-framing release to
   `v0.2.0` protocol-envelope development.
 - Advanced Cargo package metadata to `0.2.0` and updated the architecture and

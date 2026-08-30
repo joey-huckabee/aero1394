@@ -9,7 +9,8 @@ use aero1394::forensic::{
     FileOffset, Hexdump, HexdumpConfig, HexdumpConfigError, HexdumpError, HexdumpLine,
     MAX_BYTES_PER_LINE,
 };
-use aero1394::payload::{PayloadContext, PayloadSelection, select_payload};
+use aero1394::payload::msfcs_storesmassdata_b::StoresMassData;
+use aero1394::payload::{KnownPayload, PayloadContext, PayloadSelection, select_payload};
 use std::env;
 use std::error::Error;
 use std::ffi::{OsStr, OsString};
@@ -92,7 +93,7 @@ The file must end at its four-byte zero terminator. Only the explicit
 0x00005D04 plus 116-byte mapping is decoded. Other data-item identities and
 stored-data lengths remain successful, inspectable records labeled unsupported.
 Mapped application bytes are checked against the built-in payload registry;
-registry recognition does not imply application-field decoding.
+registered payloads expose raw primitive fields without inferred engineering semantics.
 ";
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -694,7 +695,23 @@ fn render_payload_selection(
                 definition.version(),
                 matched.raw().size(),
                 definition.byte_order().label(),
-            )
+            )?;
+            match matched.decode() {
+                Ok(KnownPayload::MsfcsStoresMassDataB(payload)) => {
+                    write!(
+                        output,
+                        " payload_decode=raw_fields system_ticks={} message_valid=0x{:02X} eots_present=0x{:02X} spare_byte=0x{:02X} cm_present=0x{:02X}",
+                        payload.system_ticks().get(),
+                        payload.message_valid().get(),
+                        payload.eots_present().get(),
+                        payload.spare_byte().get(),
+                        payload.cm_present().get(),
+                    )?;
+                    render_stores_mass_data(output, "current", payload.current_stores_mass_data())?;
+                    render_stores_mass_data(output, "post_ej", payload.post_ej_stores_mass_data())
+                }
+                Err(_) => output.write_all(b" payload_decode=unavailable"),
+            }
         }
         PayloadSelection::Unknown(raw) => {
             write!(output, " payload=unknown payload_size={}", raw.size())
@@ -714,6 +731,27 @@ fn render_payload_selection(
             Ok(())
         }
     }
+}
+
+fn render_stores_mass_data(
+    output: &mut impl Write,
+    prefix: &str,
+    fields: StoresMassData,
+) -> io::Result<()> {
+    write!(
+        output,
+        " {prefix}_weight={} {prefix}_cg_fs={} {prefix}_cg_bl={} {prefix}_cg_wl={} {prefix}_ixx={} {prefix}_iyy={} {prefix}_izz={} {prefix}_ixy={} {prefix}_iyz={} {prefix}_ixz={}",
+        fields.weight().value(),
+        fields.cg_fs().value(),
+        fields.cg_bl().value(),
+        fields.cg_wl().value(),
+        fields.ixx().value(),
+        fields.iyy().value(),
+        fields.izz().value(),
+        fields.ixy().value(),
+        fields.iyz().value(),
+        fields.ixz().value(),
+    )
 }
 
 const fn vpc_validation_label(outcome: VpcValidationOutcome) -> &'static str {

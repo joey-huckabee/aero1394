@@ -137,9 +137,9 @@ timing, integrity checks, and forensic analysis.
 
 ## Follow-up actions
 
-1. Implement the `payload` module and registry when the complete first payload
-   definition is supplied.
-2. Keep provisional application layouts in `docs/PAYLOADS.md` until all fields
-   are provided.
+1. Maintain the implemented `payload` module, registry, and first raw decoder as
+   the extension pattern for additional definitions.
+2. Keep unresolved engineering semantics in `docs/PAYLOADS.md` until their
+   authorized source metadata and meanings are provided.
 3. Define feature-gating and controlled-data handling before accepting a
    restricted payload definition.

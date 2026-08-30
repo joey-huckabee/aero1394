@@ -32,20 +32,29 @@ authoritative record of work accumulated before release.
 - A deterministic built-in payload registry with exact identity/size matching,
   optional context constraints, and explicit matched, unknown, and ambiguous
   outcomes that preserve raw application bytes.
-- A `layout-v1` registry entry for `msfcs_storesmassdata_b` plus CLI recognition
-  metadata that remains distinct from application-field decoding.
+- A `layout-v1` registry entry for `msfcs_storesmassdata_b` plus selection
+  metadata kept distinct from its downstream raw field decode.
+- Checked metadata for all 25 supplied Stores Mass fields, including explicit
+  offsets, primitive wire types, complete coverage, and invalid-layout checks.
+- Exact big-endian raw decoding for the unsigned system ticks, four
+  Boolean-designated bytes, and twenty IEEE-754 `f32` fields, with the original
+  bytes and float bit patterns retained.
+- Populated and sparse payload-only golden fixtures plus raw field presentation
+  in the `as5643` CLI.
 
 ## Still planned
 
-- complete `msfcs_storesmassdata_b` decoding after source metadata and the
-  remaining Boolean and engineering-unit semantics are confirmed.
+- engineering interpretation of `msfcs_storesmassdata_b` after source metadata
+  and the remaining Boolean, unit, coordinate/reference, validity, and epoch
+  semantics are confirmed.
 
 ## Evidence boundary
 
 The current decoder applies explicit reconstruction assumptions documented in
 `docs/AS5643.md`. It does not decode IEEE-1394 wire framing, assign Health
 Status bit meanings, convert Heartbeat deltas into lost-message counts, judge
-STOF schedule compliance, or interpret application bytes.
+STOF schedule compliance, or assign engineering meaning to decoded application
+primitives.
 
 This draft is not a compatibility or publication promise. It will be finalized
 from `CHANGELOG.md` only after every `v0.2.0` release gate passes.
