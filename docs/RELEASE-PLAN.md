@@ -72,7 +72,9 @@ Current hardening evidence:
   both ZIP and `tar.gz` extraction/smoke paths passed.
 - [x] Locked Windows and Linux release builds and packaged-binary smoke tests
   pass in the remote CI matrix.
-- [ ] Retained Windows and Linux workflow artifacts are manually inspected.
+- [x] Retained Windows and Linux artifacts from workflow run `33284770282`
+  were downloaded; both checksums matched, the expected members were present,
+  and the downloaded Windows binary repeated the CLI smoke tests.
 - [ ] A clean CI-passing commit is explicitly tagged and published.
 
 ## Artifact construction
