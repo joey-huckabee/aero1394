@@ -1,7 +1,7 @@
 # Built-in application payloads
 
-- Status: Initial payload evidence; complete field definition pending
-- Last updated: 2026-08-29
+- Status: Complete field layout supplied; engineering semantics pending
+- Last updated: 2026-08-30
 - Applies to: application bytes located after BIE and protocol framing
 
 ## Purpose and boundary
@@ -144,28 +144,58 @@ sample grid, remain authoritative. The observed gaps do not define a formal
 scheduling relationship between the platform's 60 Hz producer and capture
 sampling.
 
-### Known and provisional field map
+### Supplied field map
 
-Only the first field has been supplied from the payload definition. The
-remaining layout is retained as a useful hypothesis until the full structure
-is provided.
+The following table records the payload definition supplied on 2026-08-30.
+The pasted heading was `msfcs_storesmassdatab`; this document uses the
+`msfcs_storesmassdata_b` spelling from the corrected recorder summary. Field
+names, capitalization, data types, counts, word IDs, and offsets otherwise
+preserve the supplied definition.
 
-| Payload offset | Width | Current name/type | Evidence |
-| ---: | ---: | --- | --- |
-| `0` | 8 | `TimeStamp`, 64-bit long long integer, words 0-1 | **Confirmed** by supplied definition |
-| `8` | 4 | status/validity-like raw word | Hypothesis from behavior |
-| `12` | 80 | twenty aligned big-endian IEEE-754 `f32` candidates | Strong structural inference; names/units unknown |
+| Element | Data type | Element size (bits) | Element count | Word ID | MSB | LSB | Byte offset | Bit offset |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `TimeStamp` | Unsigned long long integer | `64` | `1` | `0-1` | `0` | `31` | `0` | `0` |
+| `MessageValid` | Boolean type | `8` | `1` | `2` | `0` | `7` | `8` | `0` |
+| `EOTS_Present` | Boolean type | `8` | `1` | `2` | `8` | `15` | `9` | `0` |
+| `spare_byte` | Boolean type | `8` | `1` | `2` | `16` | `23` | `10` | `0` |
+| `CM_Present` | Boolean type | `8` | `1` | `2` | `24` | `31` | `11` | `0` |
+| `CurrentStoresMassData.Weight` | Float point type | `32` | `1` | `3` | `0` | `31` | `12` | `0` |
+| `CurrentStoresMassData.Cg_FS` | Float point type | `32` | `1` | `4` | `0` | `31` | `16` | `0` |
+| `CurrentStoresMassData.Cg_BL` | Float point type | `32` | `1` | `5` | `0` | `31` | `20` | `0` |
+| `CurrentStoresMassData.Cg_WL` | Float point type | `32` | `1` | `6` | `0` | `31` | `24` | `0` |
+| `CurrentStoresMassData.Ixx` | Float point type | `32` | `1` | `7` | `0` | `31` | `28` | `0` |
+| `CurrentStoresMassData.Iyy` | Float point type | `32` | `1` | `8` | `0` | `31` | `32` | `0` |
+| `CurrentStoresMassData.Izz` | Float point type | `32` | `1` | `9` | `0` | `31` | `36` | `0` |
+| `CurrentStoresMassData.Ixy` | Float point type | `32` | `1` | `10` | `0` | `31` | `40` | `0` |
+| `CurrentStoresMassData.Iyz` | Float point type | `32` | `1` | `11` | `0` | `31` | `44` | `0` |
+| `CurrentStoresMassData.Ixz` | Float point type | `32` | `1` | `12` | `0` | `31` | `48` | `0` |
+| `PostEJStoresMassData.Weight` | Float point type | `32` | `1` | `13` | `0` | `31` | `52` | `0` |
+| `PostEJStoresMassData.Cg_FS` | Float point type | `32` | `1` | `14` | `0` | `31` | `56` | `0` |
+| `PostEJStoresMassData.Cg_BL` | Float point type | `32` | `1` | `15` | `0` | `31` | `60` | `0` |
+| `PostEJStoresMassData.Cg_WL` | Float point type | `32` | `1` | `16` | `0` | `31` | `64` | `0` |
+| `PostEJStoresMassData.Ixx` | Float point type | `32` | `1` | `17` | `0` | `31` | `68` | `0` |
+| `PostEJStoresMassData.Iyy` | Float point type | `32` | `1` | `18` | `0` | `31` | `72` | `0` |
+| `PostEJStoresMassData.Izz` | Float point type | `32` | `1` | `19` | `0` | `31` | `76` | `0` |
+| `PostEJStoresMassData.Ixy` | Float point type | `32` | `1` | `20` | `0` | `31` | `80` | `0` |
+| `PostEJStoresMassData.Iyz` | Float point type | `32` | `1` | `21` | `0` | `31` | `84` | `0` |
+| `PostEJStoresMassData.Ixz` | Float point type | `32` | `1` | `22` | `0` | `31` | `88` | `0` |
 
-The supplied definition describes `TimeStamp` as:
+The table covers all 92 payload bytes without gaps or overlaps:
 
 ```text
-Element size: 64 bits
-Word ID:      0-1
-MSB:          0
-LSB:          31
-Byte offset:  0
-Bit offset:   0
+TimeStamp                         8 bytes
+four Boolean elements            4 bytes
+CurrentStoresMassData            10 * 4 = 40 bytes
+PostEJStoresMassData             10 * 4 = 40 bytes
+total                            92 bytes
 ```
+
+The layout confirms the field boundaries and wire data types. It does not yet
+define the numeric Boolean encoding or polarity, the physical units and
+reference conventions for the mass properties, or the source document and
+revision. Until those semantics are supplied, an implementation should retain
+the four Boolean elements as their raw `u8` values and expose the floating-point
+values without assigning engineering units.
 
 In the observed big-endian payload, the two adjacent words form one monotonic
 value. For example:
@@ -176,10 +206,10 @@ raw value            0x000024E614F013B3
 decimal              40,570,612,356,019
 ```
 
-The field is believed to contain system ticks. Its epoch, signedness, and exact
-tick rate are **not confirmed**, so the canonical model keeps its 64 raw bits
-losslessly (a `u64`-backed `SystemTicks` newtype is suitable without claiming
-the ICD's signed interpretation). It must not be converted to a calendar date.
+The field definition confirms an unsigned 64-bit value, and the field is
+believed to contain system ticks. Its epoch remains **not confirmed**, so the
+canonical model keeps the value losslessly in a `u64`-backed `SystemTicks`
+newtype. It must not be converted to a calendar date.
 
 ### Recorder time versus payload time
 
@@ -219,48 +249,46 @@ one tick (LSB)          = 1 / (106.25e6 * 2^7) seconds
 
 The endpoint-derived rate of 13,597,508,871 ticks/s is approximately 0.0183%
 below that nominal value, so the capture strongly corroborates the calculation.
-The clock epoch and the payload definition's signedness remain unconfirmed.
-Any derived seconds value must carry the selected rate and evidence state.
+The clock epoch remains unconfirmed. Any derived seconds value must carry the
+selected rate and evidence state.
 Parquet metadata is an appropriate place to record the rate and LSB duration;
 the raw ticks remain canonical.
 
-### Provisional float evidence
+### Field-to-fixture correlation
 
-The populated final fixture has one raw word followed by twenty words that
-decode plausibly as big-endian `f32` values:
+The populated final fixture has four zero-valued Boolean bytes followed by the
+twenty supplied floating-point fields. Decoding the words as big-endian
+IEEE-754 `f32` values produces:
 
-| Candidate | Hex | Value |
-| ---: | --- | ---: |
-| 1 | `45AF1829` | about `5603.02002` |
-| 2 | `43F50000` | `490.0` |
-| 3 | `3F800000` | `1.0` |
-| 4 | `428C0000` | `70.0` |
-| 5 | `47090A00` | `35082.0` |
-| 6 | `4497C000` | `1214.0` |
-| 7 | `470D1300` | `36115.0` |
-| 8 | `42140000` | `37.0` |
-| 9 | `40A00000` | `5.0` |
-| 10 | `42D20000` | `105.0` |
-| 11 | `44BA00A4` | about `1488.02002` |
-| 12 | `43FB0000` | `502.0` |
-| 13 | `40800000` | `4.0` |
-| 14 | `42A20000` | `81.0` |
-| 15 | `461D4400` | `10065.0` |
-| 16 | `43780000` | `248.0` |
-| 17 | `4620A800` | `10282.0` |
-| 18 | `41B80000` | `23.0` |
-| 19 | `C1000000` | `-8.0` |
-| 20 | `42200000` | `40.0` |
+| Field | Hex | Value |
+| --- | --- | ---: |
+| `CurrentStoresMassData.Weight` | `45AF1829` | about `5603.02002` |
+| `CurrentStoresMassData.Cg_FS` | `43F50000` | `490.0` |
+| `CurrentStoresMassData.Cg_BL` | `3F800000` | `1.0` |
+| `CurrentStoresMassData.Cg_WL` | `428C0000` | `70.0` |
+| `CurrentStoresMassData.Ixx` | `47090A00` | `35082.0` |
+| `CurrentStoresMassData.Iyy` | `4497C000` | `1214.0` |
+| `CurrentStoresMassData.Izz` | `470D1300` | `36115.0` |
+| `CurrentStoresMassData.Ixy` | `42140000` | `37.0` |
+| `CurrentStoresMassData.Iyz` | `40A00000` | `5.0` |
+| `CurrentStoresMassData.Ixz` | `42D20000` | `105.0` |
+| `PostEJStoresMassData.Weight` | `44BA00A4` | about `1488.02002` |
+| `PostEJStoresMassData.Cg_FS` | `43FB0000` | `502.0` |
+| `PostEJStoresMassData.Cg_BL` | `40800000` | `4.0` |
+| `PostEJStoresMassData.Cg_WL` | `42A20000` | `81.0` |
+| `PostEJStoresMassData.Ixx` | `461D4400` | `10065.0` |
+| `PostEJStoresMassData.Iyy` | `43780000` | `248.0` |
+| `PostEJStoresMassData.Izz` | `4620A800` | `10282.0` |
+| `PostEJStoresMassData.Ixy` | `41B80000` | `23.0` |
+| `PostEJStoresMassData.Iyz` | `C1000000` | `-8.0` |
+| `PostEJStoresMassData.Ixz` | `42200000` | `40.0` |
 
 The sparse startup fixture populates only a few positions, including `450.0`
 and `62.5`, while preserving the same 92-byte structure. This supports one
-stable payload layout whose values become populated during initialization; it
-does not justify field names, units, scaling, or validity rules.
-
-The eventual Rust structure must use neutral field names only as a temporary
-implementation aid. When the remaining definition is supplied, replace the
-provisional table with the real names, types, offsets, units, arrays, bitfields,
-and validity relationships before calling the payload decoder supported.
+stable payload layout whose values become populated during initialization. The
+supplied table now establishes the field names, types, and offsets; the capture
+values independently corroborate the big-endian interpretation. Neither source
+yet establishes units, scaling, Boolean encoding, or validity relationships.
 
 ## Primitive and engineering representations
 
@@ -277,11 +305,16 @@ overlapping or out-of-bounds declared fields are rejected.
 
 ## Open inputs needed
 
-- the remaining `msfcs_storesmassdata_b` field names, types, byte/bit offsets,
-  units, arrays, and validity rules;
-- whether `TimeStamp` is unsigned and the authoritative system-tick frequency;
-- the meaning and byte/bit order of the word at payload offset 8;
+- the source document, revision, and handling/redistribution constraints for
+  the supplied `msfcs_storesmassdata_b` field table;
+- the Boolean encoding, polarity, and valid values for `MessageValid`,
+  `EOTS_Present`, `spare_byte`, and `CM_Present`, including whether
+  `spare_byte` is intentionally Boolean rather than a reserved raw byte;
+- the units, scaling, coordinate/reference conventions, and acronym expansions
+  for the weight, center-of-gravity, and inertia fields;
+- the epoch of the unsigned `TimeStamp` system-tick value;
 - whether ID `0x00005D04` is reused across data codes or configurations;
 - the corresponding `msfcs_storesmassdata_a` definition and its corrected
   capture evidence; and
-- handling/redistribution constraints for every supplied ICD or structure.
+- an independently produced expected decode, if available, for comparison with
+  the capture-derived fixture values.

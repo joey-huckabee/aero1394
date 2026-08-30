@@ -26,6 +26,10 @@ process must update the `Unreleased` section in the same commit.
 
 ### Changed
 
+- Replaced the provisional `msfcs_storesmassdata_b` payload hypothesis with the
+  complete user-supplied 92-byte field table, confirming an unsigned timestamp,
+  four Boolean elements, and twenty named floating-point fields while retaining
+  unresolved units, Boolean encoding, and source metadata as explicit inputs.
 - Advanced project planning from the completed `v0.1.0` BIE-framing release to
   `v0.2.0` protocol-envelope development.
 - Advanced Cargo package metadata to `0.2.0` and updated the architecture and

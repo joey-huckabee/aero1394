@@ -3,7 +3,7 @@
 - Status: Active
 - Target: `v0.2.0`
 - Theme: Evidence-backed AS5643 envelope and first built-in payload
-- Last updated: 2026-08-29
+- Last updated: 2026-08-30
 
 ## Release statement
 
@@ -40,7 +40,7 @@ in this release.
 | 2. Integrity | Calculate VPC from explicit reconstructed header inputs and return valid, invalid, absent, or unchecked outcomes. | Known-good and mutated fixtures with stored/calculated values retained. | Next |
 | 3. BIE integration | Map only the supported BIE identity/size/profile combination and expose decoded envelope values without changing generic BIE parsing. | Unknown ID and wrong-size fallbacks plus CLI integration tests. | Planned |
 | 4. Payload registry | Select payload definitions deterministically and distinguish one match, no match, and ambiguity. | Registry tests covering all three outcomes and raw unknown preservation. | Planned |
-| 5. First payload | Decode all 92 bytes of `msfcs_storesmassdata_b` with authoritative names, types, ranges, units, and validity rules. | Authorized field table, sanitized golden values, boundary/byte-order tests, and updated traceability. | Evidence pending |
+| 5. First payload | Decode all 92 bytes of `msfcs_storesmassdata_b` with authoritative names, types, ranges, units, and validity rules. | Authorized field table, sanitized golden values, boundary/byte-order tests, and updated traceability. | Field map received; semantics pending |
 | 6. Release hardening | Package and inspect `v0.2.0` on Windows and Linux. | Exact CI gates, release notes, checksums, packaged-binary smoke tests, tag-run inspection, and changelog finalization. | Planned |
 
 Each increment must be independently functional, update `CHANGELOG.md`, and
@@ -48,16 +48,16 @@ receive its own reviewable commit.
 
 ## Payload evidence needed
 
-The `msfcs_storesmassdata_b` increment needs:
+The field layout for `msfcs_storesmassdata_b` was supplied on 2026-08-30 and
+confirms its 92-byte size, field names, primitive types, signedness, word IDs,
+and byte/bit offsets. The remaining inputs are:
 
 - the definition name, revision, source, and redistribution constraints;
-- confirmation that the application region is exactly 92 bytes;
-- every field name, primitive type, signedness, byte order, byte/bit offset,
-  width, and array shape;
-- documented gaps, overlaps, unions, or conditional layouts;
-- scale, offset, unit, enumeration labels, and validity relationships;
-- authoritative signedness, frequency, and epoch status for `TimeStamp`;
-- the meaning and bit order of the raw word at payload offset 8;
+- the Boolean encoding, polarity, and validity relationships for the four
+  elements at offsets 8 through 11;
+- scale, offset, units, coordinate/reference conventions, acronym expansions,
+  and enumeration labels where applicable;
+- the epoch of the unsigned `TimeStamp` value;
 - whether message/data-item ID `0x00005D04` is reused by another data code or
   configuration; and
 - at least one independently expected decoded message or field listing that can

@@ -19,14 +19,16 @@ authoritative record of work accumulated before release.
 - Explicit failures for a Message ID outside the selected profile and retained
   representations that are shorter or longer than the confirmed profile size.
 - Golden verification against every record in the final sanitized BIE fixture.
+- A documented 92-byte `msfcs_storesmassdata_b` field map correlated with the
+  captured fixture values.
 
 ## Still planned
 
 - VPC calculation and structured validation outcomes;
 - explicit BIE-to-profile mapping and CLI presentation;
 - a deterministic built-in payload registry; and
-- complete `msfcs_storesmassdata_b` decoding after its authorized field
-  definition is supplied.
+- complete `msfcs_storesmassdata_b` decoding after source metadata and the
+  remaining Boolean and engineering-unit semantics are confirmed.
 
 ## Evidence boundary
 
