@@ -9,7 +9,7 @@ record family and its implementation contract.
 
 ## Project status
 
-**`v0.1.0` published; `v0.2.0` release-candidate hardening underway.**
+**`v0.2.0` published with AS5643 envelope, VPC, and Stores Mass decoding.**
 The Rust library and CLI perform bounded, offset-aware hex inspection. Supplied
 simulation excerpts and recorder summary metadata establish a 16-byte
 big-endian header and length-delimited stored data for the observed record
@@ -33,15 +33,16 @@ nominal 13.6 GHz elapsed-time conversion. Confirmed engineering units,
 coordinate/reference conventions, and timestamp epoch remain evidence-gated
 beyond `v0.2.0`.
 
-The first initial-development release, [`v0.1.0`](https://github.com/joey-huckabee/aero1394/releases/tag/v0.1.0),
-is published with verified Windows and Linux archives and checksums. Further
-protocol and payload semantics remain evidence-gated.
+The current initial-development release,
+[`v0.2.0`](https://github.com/joey-huckabee/aero1394/releases/tag/v0.2.0), is
+published with verified Windows and Linux archives and checksums. Further
+engineering semantics remain evidence-gated.
 
-The frozen candidate scope and remaining release gates are in the
+The completed scope and release evidence are in the
 [`v0.2.0` release plan](docs/RELEASE-PLAN-v0.2.0.md). Every development
 increment is recorded in the [changelog](CHANGELOG.md) before it is committed.
-The completed [`v0.1.0` release plan](docs/RELEASE-PLAN.md) remains as release
-evidence.
+The completed [`v0.1.0` release plan](docs/RELEASE-PLAN.md) remains as earlier
+release evidence.
 
 See the [internal BIE format contract](docs/BIE-FORMAT.md) for the supported
 grammar, explicit field status, and unresolved status flag. Capture provenance
@@ -120,11 +121,11 @@ python scripts/package-release.py --platform windows-x86_64 --archive-format zip
 
 CI runs the corresponding ZIP or `tar.gz` packaging path on Windows and Linux.
 Manual workflow runs and version tags retain the candidates as workflow
-artifacts, but do not publish a GitHub release; `v0.1.0` was published manually
-after artifact inspection. See the
-[`v0.2.0` release notes](docs/RELEASE-NOTES-v0.2.0.md) for the candidate scope
-and the [`v0.1.0` release notes](docs/RELEASE-NOTES-v0.1.0.md) for the previous
-shipped boundary.
+artifacts, but do not publish a GitHub release; `v0.1.0` and `v0.2.0` were
+published manually after artifact inspection. See the
+[`v0.2.0` release notes](docs/RELEASE-NOTES-v0.2.0.md) for the current shipped
+boundary and the [`v0.1.0` release notes](docs/RELEASE-NOTES-v0.1.0.md) for the
+previous release.
 
 See [Reverse-engineering BIE captures](docs/REVERSE-ENGINEERING.md) for the
 evidence workflow and [current architecture](docs/ARCHITECTURE.md) for the

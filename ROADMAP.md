@@ -13,21 +13,6 @@ Candidate items are not compatibility promises. Each item must have authorized
 sample data, a defined ownership boundary, and testable acceptance criteria
 before implementation begins.
 
-## Deliver the `v0.2.0` AS5643 and payload path
-
-The dependency order, small functional increments, payload evidence request,
-and exit gates are defined in
-[`docs/RELEASE-PLAN-v0.2.0.md`](docs/RELEASE-PLAN-v0.2.0.md).
-
-Raw AS5643 envelope decoding, VPC validation, explicit BIE mapping, CLI
-presentation, the deterministic built-in payload registry, and raw typed
-decoding plus provisional semantics for every `msfcs_storesmassdata_b` field
-are implemented. The functional scope is frozen and release hardening is in
-progress. Confirmed engineering interpretation is deferred beyond `v0.2.0`;
-source metadata and unresolved engineering-unit, coordinate/reference,
-timestamp-epoch, and field-meaning evidence remain required before that
-interpretation can be called supported.
-
 ## Extend the internal BIE path
 
 ### Resolve BIE status flag `0x40000000`
@@ -133,6 +118,19 @@ or API access, redistribution approval, and an adapter boundary that does not
 mistake the internal BIE format for a DAP-defined container.
 
 ## Extend built-in payload coverage
+
+### Confirm Stores Mass engineering semantics
+
+The `v0.2.0` raw fields and explicitly provisional interpretations remain the
+supported boundary. Future work requires source metadata and confirmation of
+the engineering units, coordinate/reference conventions, timestamp epoch,
+acronym expansions, group meanings, and `MessageValid` polarity.
+
+Exit gate: authorized source facts and at least one independent expected
+engineering-value listing support updated payload documentation, positive and
+negative fixtures, raw-to-engineering conversion tests, and traceability.
+
+### Add another authorized payload structure
 
 For each additional authorized payload structure:
 

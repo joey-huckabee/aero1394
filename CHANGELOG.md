@@ -9,6 +9,11 @@ process must update the `Unreleased` section in the same commit.
 
 ## [Unreleased]
 
+### Changed
+
+- Recorded the completed `v0.2.0` release and moved its remaining
+  evidence-gated Stores Mass engineering work into the roadmap.
+
 ## [0.2.0] - 2026-08-30
 
 ### Added

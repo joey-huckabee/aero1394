@@ -1,6 +1,6 @@
 # Aero1394 v0.2.0 release plan
 
-- Status: Active
+- Status: Complete
 - Target: `v0.2.0`
 - Theme: Evidence-backed AS5643 envelope and first built-in payload
 - Last updated: 2026-08-30
@@ -43,7 +43,7 @@ in this release.
 | 5a. First payload raw fields | Decode all 92 bytes of `msfcs_storesmassdata_b` with supplied names, primitive types, exact ranges, and preserved raw values. | Sanitized populated/sparse golden values, exact-length and byte-order tests, definition validation, and updated traceability. | Complete |
 | 5b. Provisional payload semantics | Add strict Boolean interpretation, non-fatal findings, message validity, reserved-byte policy, direct IEEE-754 values, and nominal elapsed seconds without replacing raw values. | Warning-bearing tests, populated/sparse fixtures, explicit uncertainty labels, and CLI exit-code checks. | Complete |
 | 5c. Confirmed engineering semantics | Add confirmed units, coordinate/reference conventions, acronym/group meanings, and timestamp epoch without replacing raw values. | Authorized source metadata and independent expected engineering values. | Deferred beyond `v0.2.0`; evidence inputs pending |
-| 6. Release hardening | Package and inspect `v0.2.0` on Windows and Linux. | Exact CI gates, release notes, checksums, packaged-binary smoke tests, tag-run inspection, and changelog finalization. | In progress |
+| 6. Release hardening | Package and inspect `v0.2.0` on Windows and Linux. | Exact CI gates, release notes, checksums, packaged-binary smoke tests, tag-run inspection, and changelog finalization. | Complete |
 
 Each increment must be independently functional, update `CHANGELOG.md`, and
 receive its own reviewable commit.
@@ -120,5 +120,10 @@ changing the preserved input.
 - [x] Both retained candidates from workflow `33334581096` were downloaded;
   their checksums matched, each archive contained exactly the expected four
   members, and the Windows binary repeated every version/help smoke check.
-- [ ] The changelog is moved from `Unreleased` to a dated `0.2.0` heading, and
-  that clean CI-passing commit is explicitly tagged and published.
+- [x] Clean commit `ee37b29` passed workflow `33334793475`, was tagged
+  `v0.2.0`, and passed tag workflow `33334855411`. Both tag-built checksums and
+  archive member sets were verified, the Windows binary repeated every smoke
+  check, and the four tag-built assets were published without modification.
+- [x] The tag-built Linux archive matched the inspected candidate
+  byte-for-byte. The tag-built Windows ZIP and its checksum are the
+  authoritative published Windows artifacts.
