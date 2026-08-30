@@ -65,11 +65,14 @@ fn as5643_lists_mapped_envelope_and_vpc_values() {
     assert_eq!(lines.len(), 5);
     assert_eq!(
         lines[0],
-        "record=0 offset=0x0000000000000000 data_item_id=0x00005D04 recorder_seconds=1722431146 recorder_microseconds=271487 status_and_length=0x00000074 unresolved_flags=0x00000000 data_length=116 as5643=mapped profile=aero1394-assumed-as5643b-v1 assumption_dependent=true message_id=0x00005D04 reserved_security=0x00000000 node_id=0x00000000 priority_and_payload_length=0x00000064 health_status=0x00000000 heartbeat=0x049CBDEE application_length=92 stof_transmit_offset=1400 stof_receive_offset=500 stof_datapump_offset=500 stored_vpc=0xED45F5A5 calculated_vpc=0xED45F5A5 vpc=valid"
+        "record=0 offset=0x0000000000000000 data_item_id=0x00005D04 recorder_seconds=1722431146 recorder_microseconds=271487 status_and_length=0x00000074 unresolved_flags=0x00000000 data_length=116 as5643=mapped profile=aero1394-assumed-as5643b-v1 assumption_dependent=true message_id=0x00005D04 reserved_security=0x00000000 node_id=0x00000000 priority_and_payload_length=0x00000064 health_status=0x00000000 heartbeat=0x049CBDEE application_length=92 stof_transmit_offset=1400 stof_receive_offset=500 stof_datapump_offset=500 stored_vpc=0xED45F5A5 calculated_vpc=0xED45F5A5 vpc=valid payload=matched payload_name=msfcs_storesmassdata_b payload_definition=layout-v1 payload_size=92 payload_byte_order=big-endian"
     );
     assert!(lines[1].contains("unresolved_flags=0x40000000"));
     assert!(lines[2].contains("unresolved_flags=0x40000000"));
     assert!(lines[3].contains("stored_vpc=0x158E7E3B calculated_vpc=0x158E7E3B vpc=valid"));
+    assert!(lines[3].contains(
+        "payload=matched payload_name=msfcs_storesmassdata_b payload_definition=layout-v1"
+    ));
     assert_eq!(lines[4], "terminator_offset=0x0000000000000210 records=4");
 }
 

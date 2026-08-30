@@ -29,10 +29,14 @@ authoritative record of work accumulated before release.
   inputs, profile assumptions, stored/calculated VPC, and validation outcomes.
 - A documented 92-byte `msfcs_storesmassdata_b` field map correlated with the
   captured fixture values.
+- A deterministic built-in payload registry with exact identity/size matching,
+  optional context constraints, and explicit matched, unknown, and ambiguous
+  outcomes that preserve raw application bytes.
+- A `layout-v1` registry entry for `msfcs_storesmassdata_b` plus CLI recognition
+  metadata that remains distinct from application-field decoding.
 
 ## Still planned
 
-- a deterministic built-in payload registry; and
 - complete `msfcs_storesmassdata_b` decoding after source metadata and the
   remaining Boolean and engineering-unit semantics are confirmed.
 

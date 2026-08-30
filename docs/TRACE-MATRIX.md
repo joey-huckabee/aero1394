@@ -83,9 +83,9 @@ file or add `--check` to detect drift without writing.
 
 | L2 ID | L3 children | Verification artifacts | Status |
 | --- | --- | --- | --- |
-| L2-PAY-001 | L3-PAY-001, L3-PAY-002 | _(TBD)_ | Draft |
+| L2-PAY-001 | L3-PAY-001, L3-PAY-002 | `src/payload/mod.rs`<br>`src/payload/msfcs_storesmassdata_b.rs`<br>`src/payload/registry.rs`<br>`tests/payload_registry.rs::selects_the_stores_mass_definition_after_protocol_decoding` | Implemented |
 | L2-PAY-002 | L3-PAY-003, L3-PAY-007, L3-PAY-008, L3-PAY-009 | _(TBD)_ | Draft |
-| L2-PAY-003 | L3-PAY-004, L3-PAY-005, L3-PAY-006 | _(TBD)_ | Draft |
+| L2-PAY-003 | L3-PAY-004, L3-PAY-005, L3-PAY-006 | `src/payload/registry.rs::preserves_unknown_identity_context_size_and_bytes`<br>`src/payload/registry.rs::reports_every_ambiguous_match_in_registry_order`<br>`src/payload/registry.rs::requires_exact_size_and_any_declared_context`<br>`src/payload/registry.rs::selects_exactly_one_identity_and_size_match`<br>`src/payload/registry.rs::uses_available_data_code_and_configuration_constraints`<br>`tests/payload_registry.rs::built_in_registry_preserves_an_unknown_payload`<br>`tests/payload_registry.rs::built_in_registry_rejects_a_known_identity_with_another_size`<br>`tests/payload_registry.rs::selects_the_stores_mass_definition_after_protocol_decoding` | Implemented |
 | L2-PAY-004 | L3-PAY-010, L3-PAY-011, L3-PAY-012 | `docs/BIE-EVIDENCE.md`<br>`docs/PAYLOADS.md`<br>`docs/adr/0012-use-built-in-rust-payload-definitions.md` | Partially Implemented |
 
 ### L1-OUT: Canonical data and output adapters
@@ -117,7 +117,7 @@ file or add `--check` to detect drift without writing.
 | --- | --- | --- | --- |
 | L2-TST-001 | L3-TST-001, L3-TST-002, L3-TST-003, L3-TST-006 | `docs/adr/0009-treat-documentation-and-test-evidence-as-deliverables.md`<br>`src/bie/mod.rs::accepts_the_sentinel_only_empty_form`<br>`tests/bie_fixtures.rs::empty_recording_is_one_zero_word`<br>`tests/bie_fixtures.rs::end_fixture_preserves_four_records_and_original_terminator`<br>`tests/bie_fixtures.rs::startup_fixture_preserves_four_consecutive_records`<br>`tests/cli_records.rs::records_accepts_the_sentinel_only_fixture`<br>`tests/cli_records.rs::records_lists_the_complete_end_fixture`<br>`tests/fixtures/bie/README.md`<br>`tests/fixtures/bie/empty-recording.hex`<br>`tests/fixtures/bie/end-four-records.hex`<br>`tests/fixtures/bie/startup-four-records.hex` | Partially Implemented |
 | L2-TST-002 | L3-TST-004 | _(TBD)_ | Draft |
-| L2-TST-003 | L3-TST-005 | _(TBD)_ | Draft |
+| L2-TST-003 | L3-TST-005 | `src/payload/registry.rs::preserves_unknown_identity_context_size_and_bytes`<br>`src/payload/registry.rs::reports_every_ambiguous_match_in_registry_order`<br>`tests/payload_registry.rs::built_in_registry_preserves_an_unknown_payload` | Implemented |
 
 ---
 
@@ -133,14 +133,14 @@ file or add `--check` to detect drift without writing.
 | BIE | 1 | 5 | 10 | 0 | 9 | 0 | 9 |
 | TIM | 1 | 4 | 10 | 0 | 2 | 0 | 2 |
 | PRO | 1 | 3 | 5 | 0 | 5 | 0 | 5 |
-| PAY | 1 | 4 | 12 | 0 | 0 | 0 | 2 |
+| PAY | 1 | 4 | 12 | 0 | 4 | 0 | 7 |
 | OUT | 1 | 2 | 6 | 0 | 3 | 0 | 3 |
-| TST | 1 | 3 | 6 | 0 | 1 | 0 | 3 |
-| **Total** | **6** | **21** | **49** | **0** | **20** | **0** | **24** |
+| TST | 1 | 3 | 6 | 0 | 2 | 0 | 4 |
+| **Total** | **6** | **21** | **49** | **0** | **25** | **0** | **30** |
 
-**Tested by at least one marker**: 20 of 70 (28.6%).
+**Tested by at least one marker**: 25 of 70 (35.7%).
 
-**Verified by a test or named non-test evidence**: 24 of 70 (34.3%).
+**Verified by a test or named non-test evidence**: 30 of 70 (42.9%).
 
 ### Applicability summary
 

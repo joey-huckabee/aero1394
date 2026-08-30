@@ -17,7 +17,10 @@ adds names, dates, engineering values, or formatting.
 For the supported BIE identity and stored size, each line includes the raw BIE
 metadata, selected assumption-dependent profile, reconstructed header words,
 raw AS5643 envelope fields, application length, stored and calculated VPC, and
-the structured validation outcome. Unsupported IDs and stored sizes remain
+the structured validation outcome. For a mapped envelope, the line also reports
+the built-in payload-selection outcome and, for one match, its stable name,
+Aero1394 definition version, exact size, and byte order. This is registry
+recognition rather than field decoding. Unsupported IDs and stored sizes remain
 successful inventory lines with explicit reasons.
 
 This text is deliberately not a versioned machine schema. Formatting may

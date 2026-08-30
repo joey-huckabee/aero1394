@@ -1,6 +1,6 @@
 # Built-in application payloads
 
-- Status: Complete field layout supplied; engineering semantics pending
+- Status: Registry implemented and complete field layout supplied; engineering semantics pending
 - Last updated: 2026-08-30
 - Applies to: application bytes located after BIE and protocol framing
 
@@ -29,21 +29,36 @@ required now:   data_item_id + payload_size
 optional later: data_code + configuration + definition version
 ```
 
-The intended source layout is:
+The implemented registry source layout is:
 
 ```text
 src/payload/
   mod.rs                         public payload boundary
   registry.rs                    deterministic definition selection
-  value.rs                       shared raw/engineering value types
-  msfcs_storesmassdata_b.rs      one built-in definition
+  msfcs_storesmassdata_b.rs      first built-in identity and size definition
 ```
 
 Every payload module must declare its identity, version, match criteria, byte
 order, total size, and explicit field ranges. It decodes from a checked byte
-slice and preserves raw values. The registry returns a typed known-payload
-variant, an explicit ambiguous-match result, or an unknown payload containing
-the original bytes.
+slice and preserves raw values. The complete payload layer will return a typed
+known-payload variant, an explicit ambiguous-match result, or an unknown
+payload containing the original bytes.
+
+Increment 4 implements the selection boundary before field decoding. Public
+`PayloadContext` supplies the data-item ID and any available data-code or
+configuration selectors. `PayloadRegistry` requires exact ID and byte length,
+then applies every constraint declared by a candidate. A required constraint
+does not match absent context. Results explicitly distinguish one matched
+definition, no match, and multiple matches; every result retains the borrowed
+raw application bytes and context. Definitions and ambiguity candidates remain
+in stable registry order.
+
+The built-in `msfcs_storesmassdata_b` entry uses Aero1394 definition version
+`layout-v1`. That label versions the supplied layout within this project and is
+not asserted to be the still-unconfirmed source-document revision. The entry
+currently declares identity, exact size, and byte order. Its field decoder and
+field-range declarations are the next increment, so a registry match must not
+be presented as a completed application decode.
 
 No payload module may reach backward into BIE parsing. The layers interact like
 this:
@@ -106,6 +121,7 @@ payload. That second payload remains a separate future input.
 | Property | Value | Evidence |
 | --- | --- | --- |
 | Name | `msfcs_storesmassdata_b` | **Confirmed** by recorder summary |
+| Aero1394 definition version | `layout-v1` | Project-local identifier for the supplied layout |
 | Data-item ID | `0x00005D04` | **Confirmed** by summary and record bytes |
 | Application size | 92 bytes | **Confirmed** by summary and record geometry |
 | Byte order | Big-endian for currently observed multi-byte values | **Confirmed** for timestamp and float candidates |

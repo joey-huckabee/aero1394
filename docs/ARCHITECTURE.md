@@ -176,16 +176,21 @@ valid, invalid, absent, and unchecked outcomes.
 
 The separate `bie_as5643` adapter now maps only the supported BIE identity and
 retained size to the named profile, and the CLI presents mapped and unsupported
-outcomes. The next slice is the deterministic typed payload registry;
-application-field semantics remain downstream. The definitive contracts are
-in `BIE-FORMAT.md`, `AS5643.md`, and `PAYLOADS.md`; live verification status is
-in `TRACE-MATRIX.md`.
+outcomes. The separate `payload` module now selects compiled-in definitions by
+exact data-item ID and application size, applies optional context constraints,
+and preserves raw input for one-match, no-match, and ambiguous outcomes. The
+CLI reports a registry match without presenting it as a field decode. The next
+slice is checked raw-field decoding for `msfcs_storesmassdata_b`; engineering
+semantics remain evidence-gated. The definitive contracts are in
+`BIE-FORMAT.md`, `AS5643.md`, and `PAYLOADS.md`; live verification status is in
+`TRACE-MATRIX.md`.
 
 ## Verification
 
 Unit and integration tests cover forensic bounds, BIE framing/streaming,
 AS5643 profile selection and retained-size errors, golden raw envelope values,
-known-good and corrupted VPC outcomes, argument parsing, and rendering. CLI
+known-good and corrupted VPC outcomes, deterministic payload selection,
+unknown and ambiguous payload preservation, argument parsing, and rendering. CLI
 integration tests run the compiled binary against temporary mapped, unknown-ID,
 and wrong-size captures. CI applies formatting, Clippy-with-warnings-denied,
 and all tests on Windows and Linux.

@@ -31,6 +31,13 @@ process must update the `Unreleased` section in the same commit.
   complete records for unsupported identities and layouts.
 - Added the `as5643` CLI command for assumption-labeled envelope and VPC
   presentation, including non-failing unsupported-ID and wrong-size results.
+- Added a separate built-in payload registry that selects definitions by exact
+  data-item ID and payload size, supports optional data-code and configuration
+  constraints, and explicitly preserves matched, unknown, and ambiguous raw
+  payloads.
+- Registered the 92-byte `msfcs_storesmassdata_b` identity as Aero1394 layout
+  version `layout-v1` and added payload-recognition metadata to `as5643` CLI
+  output without claiming that application fields have been decoded.
 - Added draft `v0.2.0` release notes so normal CI can package the in-development
   version without presenting it as released.
 

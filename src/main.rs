@@ -9,6 +9,7 @@ use aero1394::forensic::{
     FileOffset, Hexdump, HexdumpConfig, HexdumpConfigError, HexdumpError, HexdumpLine,
     MAX_BYTES_PER_LINE,
 };
+use aero1394::payload::{PayloadContext, PayloadSelection, select_payload};
 use std::env;
 use std::error::Error;
 use std::ffi::{OsStr, OsString};
@@ -90,6 +91,8 @@ Options:
 The file must end at its four-byte zero terminator. Only the explicit
 0x00005D04 plus 116-byte mapping is decoded. Other data-item identities and
 stored-data lengths remain successful, inspectable records labeled unsupported.
+Mapped application bytes are checked against the built-in payload registry;
+registry recognition does not imply application-field decoding.
 ";
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -653,11 +656,19 @@ fn render_as5643_record(
             } else {
                 output.write_all(b"none")?;
             }
-            writeln!(
+            write!(
                 output,
                 " vpc={}",
                 vpc_validation_label(validation.outcome())
-            )
+            )?;
+            render_payload_selection(
+                output,
+                select_payload(
+                    PayloadContext::new(record.data_item_id().get()),
+                    message.application_data(),
+                ),
+            )?;
+            writeln!(output)
         }
         BieAs5643MappingOutcome::UnsupportedDataItem => {
             writeln!(output, "unsupported reason=data_item_id")
@@ -666,6 +677,42 @@ fn render_as5643_record(
             output,
             "unsupported reason=stored_data_length expected={expected} actual={actual}"
         ),
+    }
+}
+
+fn render_payload_selection(
+    output: &mut impl Write,
+    selection: PayloadSelection<'_, '_>,
+) -> io::Result<()> {
+    match selection {
+        PayloadSelection::Matched(matched) => {
+            let definition = matched.definition();
+            write!(
+                output,
+                " payload=matched payload_name={} payload_definition={} payload_size={} payload_byte_order={}",
+                definition.name(),
+                definition.version(),
+                matched.raw().size(),
+                definition.byte_order().label(),
+            )
+        }
+        PayloadSelection::Unknown(raw) => {
+            write!(output, " payload=unknown payload_size={}", raw.size())
+        }
+        PayloadSelection::Ambiguous(ambiguous) => {
+            write!(
+                output,
+                " payload=ambiguous payload_size={} candidates=",
+                ambiguous.raw().size()
+            )?;
+            for (index, definition) in ambiguous.definitions().iter().enumerate() {
+                if index > 0 {
+                    output.write_all(b",")?;
+                }
+                write!(output, "{}@{}", definition.name(), definition.version())?;
+            }
+            Ok(())
+        }
     }
 }
 

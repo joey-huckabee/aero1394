@@ -19,11 +19,12 @@ The dependency order, small functional increments, payload evidence request,
 and exit gates are defined in
 [`docs/RELEASE-PLAN-v0.2.0.md`](docs/RELEASE-PLAN-v0.2.0.md).
 
-Raw AS5643 envelope decoding, VPC validation, explicit BIE mapping, and CLI
-presentation are implemented. The next increment is the deterministic built-in
-payload registry. The `msfcs_storesmassdata_b` field layout is supplied, while
-its source metadata and unresolved Boolean, engineering-unit, and validity
-semantics remain required before its typed decoder can be called supported.
+Raw AS5643 envelope decoding, VPC validation, explicit BIE mapping, CLI
+presentation, and the deterministic built-in payload registry are implemented.
+The next increment is raw typed decoding for `msfcs_storesmassdata_b`. Its field
+layout is supplied, while source metadata and unresolved Boolean,
+engineering-unit, and validity semantics remain required before its complete
+engineering decoder can be called supported.
 
 ## Extend the internal BIE path
 

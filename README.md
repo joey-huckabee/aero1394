@@ -22,8 +22,10 @@ semantics. The `as5643` library module now decodes the confirmed retained
 116-byte representation under the explicit assumption-dependent profile while
 leaving its 92 application bytes opaque. A separate BIE adapter maps only data
 item `0x00005D04` with exactly 116 stored bytes, and the `as5643` CLI exposes
-the decoded envelope and VPC finding without changing generic BIE parsing.
-Typed payload registration and decoding are the next separate increments.
+the decoded envelope and VPC finding without changing generic BIE parsing. A
+separate deterministic payload registry now recognizes the 92-byte
+`msfcs_storesmassdata_b` layout and preserves unknown or ambiguous application
+bytes. Typed field decoding remains the next evidence-gated increment.
 
 The first initial-development release, [`v0.1.0`](https://github.com/joey-huckabee/aero1394/releases/tag/v0.1.0),
 is published with verified Windows and Linux archives and checksums. Further
@@ -84,6 +86,10 @@ cargo run --release -- as5643 path/to/capture.bie
 The command prints the BIE identity and raw metadata, selected profile and
 assumption marker, reconstructed ASM-header words, Health Status, Heartbeat,
 application length, STOF offsets, stored/calculated VPC, and validation result.
+For a mapped envelope, it also reports whether the application bytes matched a
+built-in payload definition, including the definition name, Aero1394 layout
+version, exact size, and byte order. A match identifies the layout only; it does
+not yet claim that the application fields were decoded.
 Unknown data-item IDs and a known ID with another stored-data length are
 reported as `unsupported` while remaining successful inspectable records. This
 human-readable output is not yet a stable machine schema.
