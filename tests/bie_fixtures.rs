@@ -38,24 +38,6 @@ fn assert_common_record(bytes: &[u8], base: usize) {
     assert_eq!(be_u32(bytes, base + 124), 500);
 }
 
-fn assert_assumed_as5643_vpc_valid(bytes: &[u8], base: usize) {
-    let message_id = be_u32(bytes, base);
-    let reserved_security = 0_u32;
-    let node_id = 0_u32;
-    let priority_and_payload_length = 0x0000_0064_u32;
-    let reconstructed_header_xor =
-        message_id ^ reserved_security ^ node_id ^ priority_and_payload_length;
-    let visible_xor = (base + 16..base + 128)
-        .step_by(4)
-        .map(|offset| be_u32(bytes, offset))
-        .fold(0, |accumulator, word| accumulator ^ word);
-    let calculated_vpc = !(reconstructed_header_xor ^ visible_xor);
-    let stored_vpc = be_u32(bytes, base + 128);
-
-    assert_eq!(reconstructed_header_xor, 0x0000_5D60);
-    assert_eq!(calculated_vpc, stored_vpc);
-}
-
 /// Requirements: L3-TST-001, L3-BIE-004
 #[test]
 fn empty_recording_is_one_zero_word() {
@@ -67,7 +49,7 @@ fn empty_recording_is_one_zero_word() {
     assert_eq!(file.terminator_offset(), FileOffset::new(0));
 }
 
-/// Requirements: L3-TST-001, L3-PRO-005, L3-BIE-001, L3-BIE-002, L3-BIE-003,
+/// Requirements: L3-TST-001, L3-BIE-001, L3-BIE-002, L3-BIE-003,
 /// Requirements: L3-BIE-006, L3-BIE-007
 #[test]
 fn startup_fixture_preserves_four_consecutive_records() {
@@ -107,7 +89,6 @@ fn startup_fixture_preserves_four_consecutive_records() {
         assert_eq!(record.stored_data(), &bytes[base + 16..base + 132]);
 
         assert_common_record(&bytes, base);
-        assert_assumed_as5643_vpc_valid(&bytes, base);
         assert_eq!(be_u32(&bytes, base + 4), 0x66AA_369B);
         assert_eq!(be_u32(&bytes, base + 8), microseconds[record_index]);
         assert_eq!(be_u32(&bytes, base + 12), status_lengths[record_index]);
@@ -123,7 +104,7 @@ fn startup_fixture_preserves_four_consecutive_records() {
     );
 }
 
-/// Requirements: L3-TST-001, L3-PRO-005, L3-BIE-004
+/// Requirements: L3-TST-001, L3-BIE-004
 #[test]
 fn end_fixture_preserves_four_records_and_original_terminator() {
     let bytes = fixture_bytes(include_str!("fixtures/bie/end-four-records.hex"));
@@ -155,7 +136,6 @@ fn end_fixture_preserves_four_records_and_original_terminator() {
             DataItemId::new(0x0000_5D04)
         );
         assert_common_record(&bytes, base);
-        assert_assumed_as5643_vpc_valid(&bytes, base);
         assert_eq!(be_u32(&bytes, base + 4), 0x66AA_36AA);
         assert_eq!(be_u32(&bytes, base + 8), microseconds[record_index]);
         assert_eq!(be_u32(&bytes, base + 12), status_lengths[record_index]);

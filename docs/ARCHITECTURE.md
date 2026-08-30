@@ -1,7 +1,7 @@
 # Aero1394 architecture
 
-- Status: Strict BIE framing and record-inventory CLI implemented; release hardening pending
-- Last updated: 2026-08-29
+- Status: BIE framing and assumption-dependent AS5643 envelope/VPC implemented
+- Last updated: 2026-08-30
 
 ## Current vertical slice
 
@@ -21,6 +21,9 @@ Library: forensic::Hexdump -> HexdumpLine { absolute offset, raw bytes }
 Library: &[u8] + FileOffset -> bie::parse_file -> BieFile { borrowed records }
 
 CLI: records path -> validate BieReader pass -> render BieReader pass
+
+Library: MessageId + retained &[u8] -> as5643 profile -> raw envelope
+                                                     -> VpcValidation
 ```
 
 The `forensic` module is format-neutral. It does not identify a source as BIE,
@@ -156,18 +159,21 @@ fields and exact stored regions. The BIE-independent `as5643` module now
 decodes the retained 116-byte representation for the explicitly selected
 `aero1394-assumed-as5643b-v1` profile. It exposes raw/reconstructed envelope
 fields and a borrowed 92-byte application region while retaining the complete
-input and assumption marker.
+input and assumption marker. It calculates the VPC from explicit reconstructed
+header inputs, preserves the stored and calculated words, and distinguishes
+valid, invalid, absent, and unchecked outcomes.
 
-The next slice calculates VPC from explicit reconstruction inputs. BIE profile
-selection, CLI presentation, the typed payload registry, and application-field
-semantics remain downstream operations. The definitive contracts are in
-`BIE-FORMAT.md`, `AS5643.md`, and `PAYLOADS.md`; live verification status is in
-`TRACE-MATRIX.md`.
+The next slice maps only the supported BIE identity and retained size to this
+named profile and adds CLI presentation. The typed payload registry and
+application-field semantics remain downstream operations. The definitive
+contracts are in `BIE-FORMAT.md`, `AS5643.md`, and `PAYLOADS.md`; live
+verification status is in `TRACE-MATRIX.md`.
 
 ## Verification
 
 Unit and integration tests cover forensic bounds, BIE framing/streaming,
 AS5643 profile selection and retained-size errors, golden raw envelope values,
-argument parsing, and rendering. CLI integration tests run the compiled binary
-against temporary captures. CI applies formatting, Clippy-with-warnings-denied,
-and all tests on Windows and Linux.
+known-good and corrupted VPC outcomes, argument parsing, and rendering. CLI
+integration tests run the compiled binary against temporary captures. CI
+applies formatting, Clippy-with-warnings-denied, and all tests on Windows and
+Linux.

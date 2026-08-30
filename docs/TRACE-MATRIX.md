@@ -61,7 +61,7 @@ file or add `--check` to detect drift without writing.
 
 | L1 ID | L2 children | Direct artifacts | Status |
 | --- | --- | --- | --- |
-| L1-PRO-001 | L2-PRO-001, L2-PRO-002, L2-PRO-003 | _(none)_ | Partially Implemented |
+| L1-PRO-001 | L2-PRO-001, L2-PRO-002, L2-PRO-003 | _(none)_ | Implemented |
 
 **L2 -> L3 -> Verification artifacts**
 
@@ -69,7 +69,7 @@ file or add `--check` to detect drift without writing.
 | --- | --- | --- | --- |
 | L2-PRO-001 | L3-PRO-001 | `src/bie/mod.rs::parses_explicit_fields_variable_length_and_unknown_id` | Implemented |
 | L2-PRO-002 | L3-PRO-002, L3-PRO-003 | `src/as5643/mod.rs::rejects_a_message_id_outside_the_selected_profile`<br>`src/as5643/mod.rs::rejects_short_and_long_retained_representations`<br>`tests/as5643_profile.rs::decodes_raw_profile_fields_from_known_good_bie_records` | Implemented |
-| L2-PRO-003 | L3-PRO-004, L3-PRO-005 | `docs/AS5643.md`<br>`docs/BIE-FORMAT.md`<br>`tests/bie_fixtures.rs`<br>`tests/bie_fixtures.rs::end_fixture_preserves_four_records_and_original_terminator`<br>`tests/bie_fixtures.rs::startup_fixture_preserves_four_consecutive_records` | Partially Implemented |
+| L2-PRO-003 | L3-PRO-004, L3-PRO-005 | `docs/AS5643.md`<br>`docs/BIE-FORMAT.md`<br>`src/as5643/mod.rs::distinguishes_absent_and_unavailable_vpc_results`<br>`src/as5643/mod.rs::reports_unaligned_protected_data_as_not_checked`<br>`tests/as5643_profile.rs`<br>`tests/as5643_profile.rs::decodes_raw_profile_fields_from_known_good_bie_records`<br>`tests/as5643_profile.rs::reports_a_mutated_protected_word_as_invalid_without_losing_evidence`<br>`tests/as5643_profile.rs::validates_every_startup_fixture_vpc` | Implemented |
 
 ### L1-PAY: Built-in application payload decoding
 
@@ -132,23 +132,23 @@ file or add `--check` to detect drift without writing.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | BIE | 1 | 5 | 10 | 0 | 8 | 0 | 8 |
 | TIM | 1 | 4 | 10 | 0 | 2 | 0 | 2 |
-| PRO | 1 | 3 | 5 | 0 | 4 | 0 | 4 |
+| PRO | 1 | 3 | 5 | 0 | 5 | 0 | 5 |
 | PAY | 1 | 4 | 12 | 0 | 0 | 0 | 2 |
 | OUT | 1 | 2 | 6 | 0 | 3 | 0 | 3 |
 | TST | 1 | 3 | 6 | 0 | 1 | 0 | 3 |
-| **Total** | **6** | **21** | **49** | **0** | **18** | **0** | **22** |
+| **Total** | **6** | **21** | **49** | **0** | **19** | **0** | **23** |
 
-**Tested by at least one marker**: 18 of 70 (25.7%).
+**Tested by at least one marker**: 19 of 70 (27.1%).
 
-**Verified by a test or named non-test evidence**: 22 of 70 (31.4%).
+**Verified by a test or named non-test evidence**: 23 of 70 (32.9%).
 
 ### Applicability summary
 
 | Applicability | L3 requirements |
 | --- | --- |
-| Active | 31 |
+| Active | 32 |
 | Evidence-limited | 9 |
-| Deferred | 9 |
+| Deferred | 8 |
 
 ### Orphan check
 

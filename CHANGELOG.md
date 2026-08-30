@@ -21,6 +21,11 @@ process must update the `Unreleased` section in the same commit.
   identity, assumption state, and complete retained bytes.
 - Added exact-size and profile-selection errors plus golden tests over all four
   final BIE fixture records.
+- Added AS5643 VPC calculation from explicit reconstructed header inputs and
+  structured `Valid`, `Invalid`, `NotPresent`, and `NotChecked` results that
+  retain stored/calculated values and available calculation evidence.
+- Added golden VPC checks for all eight supplied records, a protected-data
+  mutation test, and unavailable/unaligned-input tests.
 - Added draft `v0.2.0` release notes so normal CI can package the in-development
   version without presenting it as released.
 

@@ -37,8 +37,8 @@ in this release.
 | Increment | Functional result | Exit evidence | Status |
 | --- | --- | --- | --- |
 | 1. Raw envelope | Decode the verified 116-byte stored representation into raw AS5643 fields and a borrowed 92-byte application region. | Golden fixture values, exact-length errors, explicit profile ID, preserved bytes, and L3 trace markers. | Complete |
-| 2. Integrity | Calculate VPC from explicit reconstructed header inputs and return valid, invalid, absent, or unchecked outcomes. | Known-good and mutated fixtures with stored/calculated values retained. | Next |
-| 3. BIE integration | Map only the supported BIE identity/size/profile combination and expose decoded envelope values without changing generic BIE parsing. | Unknown ID and wrong-size fallbacks plus CLI integration tests. | Planned |
+| 2. Integrity | Calculate VPC from explicit reconstructed header inputs and return valid, invalid, absent, or unchecked outcomes. | Known-good and mutated fixtures with stored/calculated values retained. | Complete |
+| 3. BIE integration | Map only the supported BIE identity/size/profile combination and expose decoded envelope values without changing generic BIE parsing. | Unknown ID and wrong-size fallbacks plus CLI integration tests. | Next |
 | 4. Payload registry | Select payload definitions deterministically and distinguish one match, no match, and ambiguity. | Registry tests covering all three outcomes and raw unknown preservation. | Planned |
 | 5. First payload | Decode all 92 bytes of `msfcs_storesmassdata_b` with authoritative names, types, ranges, units, and validity rules. | Authorized field table, sanitized golden values, boundary/byte-order tests, and updated traceability. | Field map received; semantics pending |
 | 6. Release hardening | Package and inspect `v0.2.0` on Windows and Linux. | Exact CI gates, release notes, checksums, packaged-binary smoke tests, tag-run inspection, and changelog finalization. | Planned |
