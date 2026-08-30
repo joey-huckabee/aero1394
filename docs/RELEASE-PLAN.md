@@ -70,7 +70,8 @@ Current hardening evidence:
   tooling are committed.
 - [x] Repeated local Windows packaging produced the same SHA-256 digest, and
   both ZIP and `tar.gz` extraction/smoke paths passed.
-- [ ] The locked Linux release build and packaged-binary smoke test pass in CI.
+- [x] Locked Windows and Linux release builds and packaged-binary smoke tests
+  pass in the remote CI matrix.
 - [ ] Retained Windows and Linux workflow artifacts are manually inspected.
 - [ ] A clean CI-passing commit is explicitly tagged and published.
 

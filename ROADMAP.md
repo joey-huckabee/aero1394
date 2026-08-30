@@ -22,7 +22,6 @@ defined in [`docs/RELEASE-PLAN.md`](docs/RELEASE-PLAN.md).
 
 Complete the final release-plan increment:
 
-- push the clean candidate and confirm the expanded Windows/Linux CI matrix;
 - run the workflow manually and inspect both retained archives and checksums;
 - tag only the clean, CI-passing release commit; and
 - publish the verified artifacts without changing their bytes.

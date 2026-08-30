@@ -20,9 +20,9 @@ sentinel and reports truncation, a missing terminator, or trailing bytes.
 The `records` CLI lists those raw BIE fields without assigning protocol
 semantics. Protocol decoding remains unimplemented.
 
-The next release gate is remote confirmation of the Windows and Linux packages,
-followed by an explicit tag and publication decision. No tag or release is
-created automatically.
+The next release gate is a manual CI run and inspection of its retained Windows
+and Linux archives and checksums, followed by an explicit tag and publication
+decision. No tag or release is created automatically.
 
 The scoped gates and incremental path for the first pre-`1.0.0` release are in
 the [`v0.1.0` release plan](docs/RELEASE-PLAN.md).
