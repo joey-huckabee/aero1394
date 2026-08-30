@@ -1,6 +1,6 @@
 # Built-in application payloads
 
-- Status: Registry and raw field decoder implemented; engineering semantics pending
+- Status: Raw decoder and provisional semantic findings implemented; engineering units pending
 - Last updated: 2026-08-30
 - Applies to: application bytes located after BIE and protocol framing
 
@@ -68,8 +68,9 @@ uses checked big-endian slice reads. `SystemTicks` retains the unsigned
 `TimeStamp`, `RawBooleanByte` retains each source-designated Boolean byte, and
 `RawF32` retains the exact IEEE-754 bits while exposing the corresponding
 unscaled `f32`. The typed result also borrows all original application bytes.
-None of those primitive interpretations supplies an epoch, Boolean polarity,
-validity relationship, scaling, units, or coordinate/reference convention.
+Provisional Boolean, validity, and elapsed-time interpretations are additive:
+they never replace these raw values or prevent the remaining fields from being
+decoded.
 
 No payload module may reach backward into BIE parsing. The layers interact like
 this:
@@ -106,6 +107,13 @@ the accepted design.
 
 ### Source metadata and correction
 
+The field definition was transcribed from an internal ICD. No additional ICD
+name, revision, or version is available from the supplied information, and the
+internal document itself is not committed. `layout-v1` therefore identifies
+only Aero1394's transcription of the field layout; it must not be presented as
+the ICD revision. This metadata limitation is recorded rather than repeatedly
+requesting information that is not currently available.
+
 The application definition is correlated with this corrected recorder summary:
 
 ```text
@@ -138,6 +146,10 @@ payload. That second payload remains a separate future input.
 | Byte order | Big-endian for currently observed multi-byte values | **Confirmed** for timestamp and float candidates |
 | Data code | `vs_bus_b3` | **Confirmed** by recorder summary |
 | Platform production rate | 60 Hz | **Confirmed for the supplied platform capture** by 876 intervals over 14.6 seconds |
+
+Within the system configuration in scope, ID `0x00005D04` identifies this same
+layout across its buses. Aero1394 does not claim that the ID is globally unique
+in unrelated systems; such systems are outside the current contract.
 
 The payload occupies record-relative bytes `0x18..0x73` in the observed record
 family. Those record offsets are not part of the Rust payload definition; the
@@ -217,12 +229,39 @@ PostEJStoresMassData             10 * 4 = 40 bytes
 total                            92 bytes
 ```
 
-The layout confirms the field boundaries and wire data types. It does not yet
-define the numeric Boolean encoding or polarity, the physical units and
-reference conventions for the mass properties, or the source document and
-revision. Until those semantics are supplied, an implementation should retain
-the four Boolean elements as their raw `u8` values and expose the floating-point
-values without assigning engineering units.
+The layout confirms the field boundaries and wire data types. The internal ICD
+source and the decisions recorded below establish the implemented provisional
+contract while deliberately leaving unsupported meanings open.
+
+### Provisional field semantics and warning policy
+
+| Field or condition | Aero1394 behavior | Evidence state |
+| --- | --- | --- |
+| Boolean bytes | Interpret only `0 = false` and `1 = true`; preserve any other byte and warn | Provisional user-supplied contract |
+| `MessageValid` | `1` means the message values are valid; `0` means invalid | **Provisional**; team confirmation pending |
+| `EOTS_Present` | `1` means present; `0` means not present | Provisional user-supplied contract; acronym unexpanded |
+| `CM_Present` | `1` means present; `0` means not present | Provisional user-supplied contract; acronym unexpanded |
+| `spare_byte` | Reserved/unused and expected to remain `0`; a nonzero value warns | Provisional user-supplied contract |
+| Presence and validity flags | Always decode and display every remaining field regardless of flag values | Confirmed implementation policy |
+| Twenty float fields | Direct, unscaled, big-endian IEEE-754 `f32`; no scale or offset | Confirmed user-supplied contract |
+| NaN or infinity | Preserve the bits and decoded special value, warn, and continue | Confirmed implementation policy |
+
+`CurrentStoresMassData` and `PostEJStoresMassData` are retained as the ICD group
+names. Their meanings and relationship remain undetermined. `PostEJ` may mean
+post-ejection, but that expansion is uncertain and is not used to derive
+behavior. `Cg_FS`, `Cg_BL`, and `Cg_WL` are center-of-gravity position values;
+their units and reference origins are unspecified. `FS`, `BL`, and `WL` remain
+unexpanded. `Weight` has no assigned unit. The `Ixx`, `Iyy`, `Izz`, `Ixy`,
+`Iyz`, and `Ixz` names are preserved as uninterpreted values and are not yet
+described as inertia components.
+
+Semantic findings are non-fatal. The CLI uses this process contract:
+
+| Exit code | Meaning |
+| ---: | --- |
+| `0` | Successful decode with no warnings |
+| `1` | Usage, I/O, framing, or other decoding error |
+| `2` | Successful decode with one or more warnings |
 
 In the observed big-endian payload, the two adjacent words form one monotonic
 value. For example:
@@ -234,8 +273,9 @@ decimal              40,570,612,356,019
 ```
 
 The field definition confirms an unsigned 64-bit value, and the field is
-believed to contain system ticks. Its epoch remains **not confirmed**, so the
-canonical model keeps the value losslessly in a `u64`-backed `SystemTicks`
+believed to contain system ticks. The current epoch hypothesis is elapsed time
+since system startup, but that meaning is **not confirmed**. The canonical
+model therefore keeps the value losslessly in a `u64`-backed `SystemTicks`
 newtype. It must not be converted to a calendar date.
 
 ### Recorder time versus payload time
@@ -245,7 +285,7 @@ The record contains two independent time domains:
 | Time | Wire representation | Meaning |
 | --- | --- | --- |
 | BIE recorder time | `u32be` Unix seconds plus `u32be` microseconds | Absolute time when the recorder stored/observed the record |
-| Payload `TimeStamp` | `u64be` raw ticks | Source/application system time; epoch unknown |
+| Payload `TimeStamp` | `u64be` raw ticks | Source/application system time; system-startup epoch hypothesis unconfirmed |
 
 Keeping the names and raw types distinct allows later latency or clock-drift
 analysis without confusing the application clock with recorder wall time.
@@ -276,8 +316,10 @@ one tick (LSB)          = 1 / (106.25e6 * 2^7) seconds
 
 The endpoint-derived rate of 13,597,508,871 ticks/s is approximately 0.0183%
 below that nominal value, so the capture strongly corroborates the calculation.
-The clock epoch remains unconfirmed. Any derived seconds value must carry the
-selected rate and evidence state.
+Aero1394 exposes `ticks / 13,600,000,000` as provisional elapsed seconds while
+retaining raw ticks as authoritative. The clock epoch remains unconfirmed, and
+the derived value is not calendar time. Any derived seconds value must carry
+the selected rate and evidence state.
 Parquet metadata is an appropriate place to record the rate and LSB duration;
 the raw ticks remain canonical.
 
@@ -315,8 +357,9 @@ populates only a few float positions, including `450.0` and `62.5`, while
 preserving the same 92-byte structure. This supports one stable payload layout
 whose values become populated during initialization. The supplied table now
 establishes the field names, types, and offsets; the capture values independently
-corroborate the big-endian interpretation. Neither source yet establishes
-units, scaling, Boolean encoding, polarity, or validity relationships.
+corroborate the big-endian interpretation. The floats have no additional scale
+or offset. Engineering units, reference conventions, and several name meanings
+remain unspecified.
 
 Payload-only derivatives of those two authorized messages and their exact
 provenance are retained under
@@ -338,15 +381,14 @@ overlapping or out-of-bounds declared fields are rejected.
 
 ## Open inputs needed
 
-- the source document, revision, and handling/redistribution constraints for
-  the supplied `msfcs_storesmassdata_b` field table;
-- the Boolean encoding, polarity, and valid values for `MessageValid`,
-  `EOTS_Present`, `spare_byte`, and `CM_Present`, including whether
-  `spare_byte` is intentionally Boolean rather than a reserved raw byte;
-- the units, scaling, coordinate/reference conventions, and acronym expansions
-  for the weight, center-of-gravity, and inertia fields;
-- the epoch of the unsigned `TimeStamp` system-tick value;
-- whether ID `0x00005D04` is reused across data codes or configurations;
+- ICD name and revision metadata, if it becomes available later;
+- team confirmation of the provisional `MessageValid` polarity;
+- units and reference origins for `Weight`, `Cg_FS`, `Cg_BL`, and `Cg_WL`;
+- meanings and units for `Ixx`, `Iyy`, `Izz`, `Ixy`, `Iyz`, and `Ixz`;
+- confirmed expansions for `EOTS`, `CM`, `FS`, `BL`, `WL`, and `PostEJ`;
+- the meanings and relationship of the two named Stores Mass groups;
+- confirmation or correction of the system-startup `TimeStamp` epoch
+  hypothesis;
 - the corresponding `msfcs_storesmassdata_a` definition and its corrected
   capture evidence; and
 - an independently produced expected decode, if available, for comparison with

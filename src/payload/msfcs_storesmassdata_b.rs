@@ -1,8 +1,10 @@
-//! Raw wire decoder for the `msfcs_storesmassdata_b` payload.
+//! Wire decoder and provisional semantics for `msfcs_storesmassdata_b`.
 //!
 //! The supplied field names, primitive types, and byte ranges are implemented
-//! exactly. Boolean polarity, engineering units, validity relationships, and
-//! the system-tick epoch remain intentionally unresolved.
+//! exactly. Raw values remain authoritative when provisional Boolean,
+//! validity, and system-time interpretations produce derived values or
+//! warnings. Engineering units, coordinate references, acronym expansions,
+//! mass-data group meanings, and the system-tick epoch remain unresolved.
 
 use super::{
     FieldLayoutError, PayloadByteOrder, PayloadDefinition, PayloadFieldDefinition, PayloadWireType,
@@ -27,6 +29,12 @@ pub const PAYLOAD_SIZE: usize = 92;
 
 /// Byte order corroborated by the supplied capture values.
 pub const BYTE_ORDER: PayloadByteOrder = PayloadByteOrder::BigEndian;
+
+/// Provisional system-tick rate derived from `106.25 MHz * 2^7`.
+pub const NOMINAL_SYSTEM_TICK_RATE_HZ: u64 = 13_600_000_000;
+
+/// Provisional duration of one system tick, in seconds.
+pub const NOMINAL_SYSTEM_TICK_PERIOD_SECONDS: f64 = 1.0 / NOMINAL_SYSTEM_TICK_RATE_HZ as f64;
 
 const TIMESTAMP_OFFSET: usize = 0;
 const MESSAGE_VALID_OFFSET: usize = 8;
@@ -190,9 +198,18 @@ impl SystemTicks {
     pub const fn get(self) -> u64 {
         self.0
     }
+
+    /// Returns provisional elapsed seconds at the nominal 13.6 GHz rate.
+    ///
+    /// System startup is the current epoch hypothesis, but it is not
+    /// confirmed. This value must not be interpreted as calendar time.
+    #[must_use]
+    pub fn provisional_elapsed_seconds(self) -> f64 {
+        self.0 as f64 / NOMINAL_SYSTEM_TICK_RATE_HZ as f64
+    }
 }
 
-/// One source-designated Boolean byte with unresolved encoding and polarity.
+/// One source-designated Boolean byte retaining its exact wire value.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct RawBooleanByte(u8);
 
@@ -207,6 +224,18 @@ impl RawBooleanByte {
     #[must_use]
     pub const fn get(self) -> u8 {
         self.0
+    }
+
+    /// Interprets the strict provisional encoding `0 = false`, `1 = true`.
+    ///
+    /// Any other byte is retained but has no Boolean interpretation.
+    #[must_use]
+    pub const fn as_bool(self) -> Option<bool> {
+        match self.0 {
+            0 => Some(false),
+            1 => Some(true),
+            _ => None,
+        }
     }
 }
 
@@ -309,6 +338,64 @@ impl StoresMassData {
     pub const fn ixz(self) -> RawF32 {
         self.ixz
     }
+
+    const fn values(self) -> [RawF32; 10] {
+        [
+            self.weight,
+            self.cg_fs,
+            self.cg_bl,
+            self.cg_wl,
+            self.ixx,
+            self.iyy,
+            self.izz,
+            self.ixy,
+            self.iyz,
+            self.ixz,
+        ]
+    }
+}
+
+/// A non-fatal semantic finding on a successfully decoded payload.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum StoresMassWarning {
+    /// `MessageValid` is provisionally interpreted as false.
+    MessageInvalid,
+    /// A Boolean-designated byte is neither `0` nor `1`.
+    InvalidBooleanEncoding {
+        /// Authoritative field name.
+        field: &'static str,
+        /// Exact unexpected wire byte.
+        value: u8,
+    },
+    /// The reserved `spare_byte` is expected to remain zero.
+    ReservedByteNonZero {
+        /// Exact unexpected wire byte.
+        value: u8,
+    },
+    /// An unscaled IEEE-754 field contains NaN or infinity.
+    NonFiniteFloat {
+        /// Authoritative field name.
+        field: &'static str,
+        /// Exact IEEE-754 wire bits.
+        bits: u32,
+    },
+}
+
+impl fmt::Display for StoresMassWarning {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::MessageInvalid => formatter.write_str("message_invalid"),
+            Self::InvalidBooleanEncoding { field, value } => {
+                write!(formatter, "invalid_boolean_encoding:{field}=0x{value:02X}")
+            }
+            Self::ReservedByteNonZero { value } => {
+                write!(formatter, "reserved_byte_nonzero:spare_byte=0x{value:02X}")
+            }
+            Self::NonFiniteFloat { field, bits } => {
+                write!(formatter, "non_finite_float:{field}=0x{bits:08X}")
+            }
+        }
+    }
 }
 
 /// All raw fields decoded from one exact 92-byte Stores Mass payload.
@@ -331,25 +418,25 @@ impl<'a> MsfcsStoresMassDataB<'a> {
         self.system_ticks
     }
 
-    /// Returns the uninterpreted `MessageValid` byte.
+    /// Returns the raw `MessageValid` byte.
     #[must_use]
     pub const fn message_valid(self) -> RawBooleanByte {
         self.message_valid
     }
 
-    /// Returns the uninterpreted `EOTS_Present` byte.
+    /// Returns the raw `EOTS_Present` byte.
     #[must_use]
     pub const fn eots_present(self) -> RawBooleanByte {
         self.eots_present
     }
 
-    /// Returns the uninterpreted `spare_byte` byte.
+    /// Returns the raw reserved `spare_byte` byte.
     #[must_use]
     pub const fn spare_byte(self) -> RawBooleanByte {
         self.spare_byte
     }
 
-    /// Returns the uninterpreted `CM_Present` byte.
+    /// Returns the raw `CM_Present` byte.
     #[must_use]
     pub const fn cm_present(self) -> RawBooleanByte {
         self.cm_present
@@ -371,6 +458,55 @@ impl<'a> MsfcsStoresMassDataB<'a> {
     #[must_use]
     pub const fn raw_bytes(self) -> &'a [u8] {
         self.raw_bytes
+    }
+
+    /// Returns all non-fatal semantic findings in deterministic field order.
+    ///
+    /// Findings never suppress decoding. The raw fields and complete source
+    /// bytes remain available even when this collection is non-empty.
+    #[must_use]
+    pub fn warnings(self) -> Vec<StoresMassWarning> {
+        let mut warnings = Vec::new();
+
+        if self.message_valid.as_bool() == Some(false) {
+            warnings.push(StoresMassWarning::MessageInvalid);
+        }
+
+        for (field, value) in [
+            ("MessageValid", self.message_valid),
+            ("EOTS_Present", self.eots_present),
+            ("spare_byte", self.spare_byte),
+            ("CM_Present", self.cm_present),
+        ] {
+            if value.as_bool().is_none() {
+                warnings.push(StoresMassWarning::InvalidBooleanEncoding {
+                    field,
+                    value: value.get(),
+                });
+            }
+        }
+
+        if self.spare_byte.get() != 0 {
+            warnings.push(StoresMassWarning::ReservedByteNonZero {
+                value: self.spare_byte.get(),
+            });
+        }
+
+        for (definition, value) in FIELD_DEFINITIONS[5..].iter().zip(
+            self.current_stores_mass_data
+                .values()
+                .into_iter()
+                .chain(self.post_ej_stores_mass_data.values()),
+        ) {
+            if !value.value().is_finite() {
+                warnings.push(StoresMassWarning::NonFiniteFloat {
+                    field: definition.name(),
+                    bits: value.bits(),
+                });
+            }
+        }
+
+        warnings
     }
 }
 

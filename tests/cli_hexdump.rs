@@ -86,3 +86,20 @@ fn offset_beyond_eof_is_an_operational_error() {
             .contains("beyond the 2-byte file")
     );
 }
+
+/// Requirements: L3-OUT-007
+#[test]
+fn usage_errors_return_exit_code_one() {
+    let output = Command::new(env!("CARGO_BIN_EXE_aero1394"))
+        .arg("unknown-command")
+        .output()
+        .expect("run aero1394");
+
+    assert_eq!(output.status.code(), Some(1));
+    assert!(output.stdout.is_empty());
+    assert!(
+        String::from_utf8(output.stderr)
+            .expect("ASCII stderr")
+            .contains("error: unknown command 'unknown-command'")
+    );
+}

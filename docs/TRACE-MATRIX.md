@@ -52,7 +52,7 @@ file or add `--check` to detect drift without writing.
 | --- | --- | --- | --- |
 | L2-TIM-001 | L3-TIM-001, L3-TIM-002, L3-TIM-003, L3-TIM-004 | `src/bie/mod.rs::parses_explicit_fields_variable_length_and_unknown_id` | Partially Implemented |
 | L2-TIM-002 | L3-TIM-005, L3-TIM-006 | _(TBD)_ | Draft |
-| L2-TIM-003 | L3-TIM-007, L3-TIM-008 | `src/payload/msfcs_storesmassdata_b.rs::decodes_explicit_big_endian_boundaries_and_preserves_bits`<br>`tests/stores_mass_payload.rs::populated_fixture_decodes_all_fields_to_expected_raw_values`<br>`tests/stores_mass_payload.rs::sparse_fixture_preserves_distinct_raw_flags_and_zero_fields` | Partially Implemented |
+| L2-TIM-003 | L3-TIM-007, L3-TIM-008 | `src/payload/msfcs_storesmassdata_b.rs::decodes_explicit_big_endian_boundaries_and_preserves_bits`<br>`tests/cli_as5643.rs::as5643_decodes_warning_bearing_payloads_and_returns_exit_code_two`<br>`tests/stores_mass_payload.rs::populated_fixture_decodes_all_fields_to_expected_raw_values`<br>`tests/stores_mass_payload.rs::sparse_fixture_preserves_distinct_raw_flags_and_zero_fields` | Implemented |
 | L2-TIM-004 | L3-TIM-009, L3-TIM-010 | `docs/BIE-EVIDENCE.md`<br>`tests/fixtures/bie/README.md` | Draft |
 
 ### L1-PRO: Protocol-envelope and integrity handling
@@ -84,9 +84,9 @@ file or add `--check` to detect drift without writing.
 | L2 ID | L3 children | Verification artifacts | Status |
 | --- | --- | --- | --- |
 | L2-PAY-001 | L3-PAY-001, L3-PAY-002 | `src/payload/mod.rs`<br>`src/payload/msfcs_storesmassdata_b.rs`<br>`src/payload/registry.rs`<br>`tests/payload_registry.rs::selects_the_stores_mass_definition_after_protocol_decoding` | Implemented |
-| L2-PAY-002 | L3-PAY-003, L3-PAY-007, L3-PAY-008, L3-PAY-009, L3-PAY-013 | `src/payload/field.rs::rejects_out_of_bounds_and_overflowing_ranges`<br>`src/payload/field.rs::rejects_overlapping_fields`<br>`src/payload/field.rs::reports_uncovered_ranges_in_offset_order`<br>`src/payload/msfcs_storesmassdata_b.rs::decodes_explicit_big_endian_boundaries_and_preserves_bits`<br>`src/payload/msfcs_storesmassdata_b.rs::rejects_short_and_long_payloads`<br>`src/payload/msfcs_storesmassdata_b.rs::supplied_fields_cover_all_92_bytes_without_gaps_or_overlaps`<br>`tests/stores_mass_payload.rs::field_definitions_match_every_supplied_name_type_and_offset`<br>`tests/stores_mass_payload.rs::payload_fixtures_equal_their_documented_source_bie_regions`<br>`tests/stores_mass_payload.rs::populated_fixture_decodes_all_fields_to_expected_raw_values`<br>`tests/stores_mass_payload.rs::sparse_fixture_preserves_distinct_raw_flags_and_zero_fields` | Partially Implemented |
+| L2-PAY-002 | L3-PAY-003, L3-PAY-007, L3-PAY-008, L3-PAY-009, L3-PAY-013 | `src/payload/field.rs::rejects_out_of_bounds_and_overflowing_ranges`<br>`src/payload/field.rs::rejects_overlapping_fields`<br>`src/payload/field.rs::reports_uncovered_ranges_in_offset_order`<br>`src/payload/msfcs_storesmassdata_b.rs::decodes_explicit_big_endian_boundaries_and_preserves_bits`<br>`src/payload/msfcs_storesmassdata_b.rs::rejects_short_and_long_payloads`<br>`src/payload/msfcs_storesmassdata_b.rs::supplied_fields_cover_all_92_bytes_without_gaps_or_overlaps`<br>`tests/stores_mass_payload.rs::field_definitions_match_every_supplied_name_type_and_offset`<br>`tests/stores_mass_payload.rs::payload_fixtures_equal_their_documented_source_bie_regions`<br>`tests/stores_mass_payload.rs::populated_fixture_decodes_all_fields_to_expected_raw_values`<br>`tests/stores_mass_payload.rs::semantic_warnings_preserve_unusual_boolean_float_and_reserved_values`<br>`tests/stores_mass_payload.rs::sparse_fixture_preserves_distinct_raw_flags_and_zero_fields` | Implemented |
 | L2-PAY-003 | L3-PAY-004, L3-PAY-005, L3-PAY-006 | `src/payload/registry.rs::preserves_unknown_identity_context_size_and_bytes`<br>`src/payload/registry.rs::reports_every_ambiguous_match_in_registry_order`<br>`src/payload/registry.rs::requires_exact_size_and_any_declared_context`<br>`src/payload/registry.rs::selects_exactly_one_identity_and_size_match`<br>`src/payload/registry.rs::uses_available_data_code_and_configuration_constraints`<br>`tests/payload_registry.rs::built_in_registry_preserves_an_unknown_payload`<br>`tests/payload_registry.rs::built_in_registry_rejects_a_known_identity_with_another_size`<br>`tests/payload_registry.rs::selects_the_stores_mass_definition_after_protocol_decoding` | Implemented |
-| L2-PAY-004 | L3-PAY-010, L3-PAY-011, L3-PAY-012 | `docs/BIE-EVIDENCE.md`<br>`docs/PAYLOADS.md`<br>`docs/adr/0012-use-built-in-rust-payload-definitions.md`<br>`src/payload/msfcs_storesmassdata_b.rs`<br>`tests/fixtures/payload/msfcs_storesmassdata_b/README.md`<br>`tests/stores_mass_payload.rs` | Partially Implemented |
+| L2-PAY-004 | L3-PAY-010, L3-PAY-011, L3-PAY-012, L3-PAY-014 | `docs/BIE-EVIDENCE.md`<br>`docs/PAYLOADS.md`<br>`docs/adr/0012-use-built-in-rust-payload-definitions.md`<br>`src/payload/msfcs_storesmassdata_b.rs`<br>`tests/cli_as5643.rs::as5643_decodes_warning_bearing_payloads_and_returns_exit_code_two`<br>`tests/fixtures/payload/msfcs_storesmassdata_b/README.md`<br>`tests/stores_mass_payload.rs`<br>`tests/stores_mass_payload.rs::populated_fixture_decodes_all_fields_to_expected_raw_values`<br>`tests/stores_mass_payload.rs::semantic_warnings_preserve_unusual_boolean_float_and_reserved_values`<br>`tests/stores_mass_payload.rs::sparse_fixture_preserves_distinct_raw_flags_and_zero_fields` | Partially Implemented |
 
 ### L1-OUT: Canonical data and output adapters
 
@@ -100,8 +100,8 @@ file or add `--check` to detect drift without writing.
 
 | L2 ID | L3 children | Verification artifacts | Status |
 | --- | --- | --- | --- |
-| L2-OUT-001 | L3-OUT-001, L3-OUT-002 | `src/main.rs::renders_raw_bie_record_inventory_values`<br>`tests/as5643_profile.rs::decodes_raw_profile_fields_from_known_good_bie_records`<br>`tests/cli_as5643.rs::as5643_labels_a_wrong_sized_supported_item_without_failing`<br>`tests/cli_as5643.rs::as5643_labels_an_unknown_data_item_without_failing`<br>`tests/cli_as5643.rs::as5643_lists_mapped_envelope_and_vpc_values`<br>`tests/cli_records.rs::records_lists_the_complete_end_fixture` | Implemented |
-| L2-OUT-002 | L3-OUT-003, L3-OUT-004, L3-OUT-005, L3-OUT-006 | `docs/OUTPUTS.md`<br>`docs/adr/0013-separate-canonical-data-from-output-presentation.md`<br>`src/main.rs::renders_raw_bie_record_inventory_values`<br>`tests/cli_records.rs::records_lists_the_complete_end_fixture` | Partially Implemented |
+| L2-OUT-001 | L3-OUT-001, L3-OUT-002 | `src/main.rs::renders_raw_bie_record_inventory_values`<br>`tests/as5643_profile.rs::decodes_raw_profile_fields_from_known_good_bie_records`<br>`tests/cli_as5643.rs::as5643_decodes_warning_bearing_payloads_and_returns_exit_code_two`<br>`tests/cli_as5643.rs::as5643_labels_a_wrong_sized_supported_item_without_failing`<br>`tests/cli_as5643.rs::as5643_labels_an_unknown_data_item_without_failing`<br>`tests/cli_as5643.rs::as5643_lists_mapped_envelope_and_vpc_values`<br>`tests/cli_records.rs::records_lists_the_complete_end_fixture`<br>`tests/stores_mass_payload.rs::semantic_warnings_preserve_unusual_boolean_float_and_reserved_values` | Implemented |
+| L2-OUT-002 | L3-OUT-003, L3-OUT-004, L3-OUT-005, L3-OUT-006, L3-OUT-007 | `docs/OUTPUTS.md`<br>`docs/adr/0013-separate-canonical-data-from-output-presentation.md`<br>`src/main.rs::renders_raw_bie_record_inventory_values`<br>`tests/cli_as5643.rs::as5643_decodes_warning_bearing_payloads_and_returns_exit_code_two`<br>`tests/cli_hexdump.rs::usage_errors_return_exit_code_one`<br>`tests/cli_records.rs::records_lists_the_complete_end_fixture` | Partially Implemented |
 
 ### L1-TST: Verification evidence and fixtures
 
@@ -131,24 +131,24 @@ file or add `--check` to detect drift without writing.
 | Category | L1 | L2 | L3 | L2 tested | L3 tested | L2 verified | L3 verified |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | BIE | 1 | 5 | 10 | 0 | 9 | 0 | 9 |
-| TIM | 1 | 4 | 10 | 0 | 3 | 0 | 3 |
+| TIM | 1 | 4 | 10 | 0 | 4 | 0 | 4 |
 | PRO | 1 | 3 | 5 | 0 | 5 | 0 | 5 |
-| PAY | 1 | 4 | 13 | 0 | 8 | 0 | 11 |
-| OUT | 1 | 2 | 6 | 0 | 3 | 0 | 3 |
+| PAY | 1 | 4 | 14 | 0 | 10 | 0 | 13 |
+| OUT | 1 | 2 | 7 | 0 | 4 | 0 | 4 |
 | TST | 1 | 3 | 6 | 0 | 3 | 0 | 4 |
-| **Total** | **6** | **21** | **50** | **0** | **31** | **0** | **35** |
+| **Total** | **6** | **21** | **52** | **0** | **35** | **0** | **39** |
 
-**Tested by at least one marker**: 31 of 71 (43.7%).
+**Tested by at least one marker**: 35 of 73 (47.9%).
 
-**Verified by a test or named non-test evidence**: 35 of 71 (49.3%).
+**Verified by a test or named non-test evidence**: 39 of 73 (53.4%).
 
 ### Applicability summary
 
 | Applicability | L3 requirements |
 | --- | --- |
-| Active | 33 |
+| Active | 37 |
 | Evidence-limited | 9 |
-| Deferred | 8 |
+| Deferred | 6 |
 
 ### Orphan check
 

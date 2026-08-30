@@ -47,6 +47,13 @@ process must update the `Unreleased` section in the same commit.
   accessible without inferred engineering semantics.
 - Added populated and sparse payload-only golden fixtures, typed registry
   dispatch, and raw Stores Mass field presentation in the `as5643` CLI.
+- Added provisional `msfcs_storesmassdata_b` semantics without replacing raw
+  values: strict `0`/`1` Booleans, message-valid state, informational presence
+  flags, reserved-byte checks, direct unscaled IEEE-754 values, and elapsed
+  seconds derived from the documented nominal 13.6 GHz system-tick rate.
+- Added deterministic non-fatal payload warnings for invalid messages,
+  unexpected Boolean encodings, nonzero reserved bytes, and NaN/infinite float
+  values; warning-bearing payloads continue to expose every decoded field.
 - Added draft `v0.2.0` release notes so normal CI can package the in-development
   version without presenting it as released.
 
@@ -58,7 +65,13 @@ process must update the `Unreleased` section in the same commit.
   unresolved units, Boolean encoding, and source metadata as explicit inputs.
 - Corrected the payload-fixture description: populated records contain the four
   Boolean-designated bytes `01 00 00 00`, while sparse startup records contain
-  `00 01 00 00`; polarity and validity meanings remain unresolved.
+  `00 01 00 00`; the subsequent provisional semantic contract interprets those
+  bytes without changing their retained raw values.
+- Established CLI exit codes `0` for clean success, `1` for usage or operational
+  errors, and `2` for successful decoding with one or more payload warnings.
+- Recorded the internal-ICD source limitation, the system-configuration scope
+  of ID `0x00005D04`, every provisional payload decision, and all meanings,
+  units, acronym expansions, and timestamp-epoch facts that remain uncertain.
 - Advanced project planning from the completed `v0.1.0` BIE-framing release to
   `v0.2.0` protocol-envelope development.
 - Advanced Cargo package metadata to `0.2.0` and updated the architecture and
