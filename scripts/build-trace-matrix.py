@@ -483,7 +483,7 @@ def main(argv: list[str] | None = None) -> int:
     generated = build_matrix()
     if args.check:
         try:
-            current = TRACE_DOC.read_bytes().decode("utf-8")
+            current = TRACE_DOC.read_text(encoding="utf-8")
         except OSError:
             current = ""
         if current != generated:
