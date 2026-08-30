@@ -4,10 +4,12 @@
 //! and evidence-backed parsing of individual records and strict complete BIE
 //! byte slices. The provisional AS5643 profile decodes its retained raw
 //! envelope and validates VPC independently of BIE and application payload
-//! types.
+//! types. A separate adapter maps only explicitly supported BIE identities and
+//! layouts to that profile while preserving unsupported records.
 
 #![forbid(unsafe_code)]
 
 pub mod as5643;
 pub mod bie;
+pub mod bie_as5643;
 pub mod forensic;

@@ -26,6 +26,11 @@ process must update the `Unreleased` section in the same commit.
   retain stored/calculated values and available calculation evidence.
 - Added golden VPC checks for all eight supplied records, a protected-data
   mutation test, and unavailable/unaligned-input tests.
+- Added a separate BIE-to-AS5643 adapter that selects the provisional profile
+  only for data item `0x00005D04` with exactly 116 stored bytes and preserves
+  complete records for unsupported identities and layouts.
+- Added the `as5643` CLI command for assumption-labeled envelope and VPC
+  presentation, including non-failing unsupported-ID and wrong-size results.
 - Added draft `v0.2.0` release notes so normal CI can package the in-development
   version without presenting it as released.
 

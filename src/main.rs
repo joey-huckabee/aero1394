@@ -2,7 +2,9 @@
 
 #![forbid(unsafe_code)]
 
+use aero1394::as5643::VpcValidationOutcome;
 use aero1394::bie::{BieReadError, BieReadItem, BieReader, BieRecord};
+use aero1394::bie_as5643::{BieAs5643MappingOutcome, map_bie_record_to_as5643};
 use aero1394::forensic::{
     FileOffset, Hexdump, HexdumpConfig, HexdumpConfigError, HexdumpError, HexdumpLine,
     MAX_BYTES_PER_LINE,
@@ -13,7 +15,7 @@ use std::ffi::{OsStr, OsString};
 use std::fmt;
 use std::fs::File;
 use std::io::{self, BufReader, BufWriter, Read, Seek, SeekFrom, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 const DEFAULT_LENGTH: u64 = 256;
@@ -28,6 +30,7 @@ Usage:
 Commands:
   hexdump    Display uninterpreted bytes with absolute file offsets
   records    List structurally parsed BIE records
+  as5643     Decode supported AS5643 envelopes from BIE records
 
 Options:
   -h, --help       Show this help
@@ -72,6 +75,23 @@ The file must end at its four-byte zero terminator. Output preserves BIE
 container values and does not imply IEEE-1394, AS5643, or payload decoding.
 ";
 
+const AS5643_HELP: &str = "\
+Decode supported AS5643 envelopes from BIE records
+
+Usage:
+  aero1394 as5643 <FILE>
+
+Arguments:
+  <FILE>                 Complete BIE file to inspect
+
+Options:
+  -h, --help             Show this help
+
+The file must end at its four-byte zero terminator. Only the explicit
+0x00005D04 plus 116-byte mapping is decoded. Other data-item identities and
+stored-data lengths remain successful, inspectable records labeled unsupported.
+";
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum ByteLimit {
     Bounded(u64),
@@ -97,6 +117,11 @@ struct HexdumpArgs {
 
 #[derive(Debug, Eq, PartialEq)]
 struct RecordsArgs {
+    path: PathBuf,
+}
+
+#[derive(Debug, Eq, PartialEq)]
+struct As5643Args {
     path: PathBuf,
 }
 
@@ -207,6 +232,13 @@ fn run() -> Result<(), AppError> {
             return write_stdout(RECORDS_HELP);
         };
         return execute_records(&arguments);
+    }
+
+    if command == "as5643" {
+        let Some(arguments) = parse_as5643_args(arguments)? else {
+            return write_stdout(AS5643_HELP);
+        };
+        return execute_as5643(&arguments);
     }
 
     Err(AppError::Usage(format!(
@@ -328,6 +360,38 @@ fn parse_records_args(
     Ok(Some(RecordsArgs { path }))
 }
 
+fn parse_as5643_args(
+    arguments: impl IntoIterator<Item = OsString>,
+) -> Result<Option<As5643Args>, AppError> {
+    let mut path = None;
+    let mut positional_only = false;
+
+    for argument in arguments {
+        if !positional_only && (argument == "-h" || argument == "--help") {
+            return Ok(None);
+        }
+        if !positional_only && argument == "--" {
+            positional_only = true;
+            continue;
+        }
+        if !positional_only && argument.to_string_lossy().starts_with('-') {
+            return Err(AppError::Usage(format!(
+                "unknown as5643 option '{}'",
+                argument.to_string_lossy()
+            )));
+        }
+        if path.replace(PathBuf::from(&argument)).is_some() {
+            return Err(AppError::Usage(format!(
+                "unexpected extra file argument '{}'",
+                argument.to_string_lossy()
+            )));
+        }
+    }
+
+    let path = path.ok_or_else(|| AppError::Usage("missing required <FILE> argument".into()))?;
+    Ok(Some(As5643Args { path }))
+}
+
 fn ensure_not_set(is_set: bool, option: &str) -> Result<(), AppError> {
     if is_set {
         Err(AppError::Usage(format!(
@@ -441,20 +505,7 @@ fn execute_hexdump(arguments: &HexdumpArgs) -> Result<(), AppError> {
 }
 
 fn execute_records(arguments: &RecordsArgs) -> Result<(), AppError> {
-    let source = File::open(&arguments.path).map_err(|error| {
-        AppError::io(
-            format!("could not open '{}'", arguments.path.display()),
-            error,
-        )
-    })?;
-    let mut validation_reader = BieReader::new(BufReader::new(source), FileOffset::new(0));
-    validate_records(&mut validation_reader)?;
-
-    let mut source = validation_reader.into_inner().into_inner();
-    source
-        .seek(SeekFrom::Start(0))
-        .map_err(|error| AppError::io("could not rewind validated BIE input", error))?;
-    let mut record_reader = BieReader::new(BufReader::new(source), FileOffset::new(0));
+    let mut record_reader = validated_bie_reader(&arguments.path)?;
     let stdout = io::stdout();
     let mut output = BufWriter::new(stdout.lock());
     let mut record_count = 0_usize;
@@ -464,26 +515,72 @@ fn execute_records(arguments: &RecordsArgs) -> Result<(), AppError> {
             Some(BieReadItem::Record(record)) => {
                 render_record(&mut output, record_count, &record)
                     .map_err(|error| AppError::io("could not write BIE record inventory", error))?;
-                record_count = record_count.checked_add(1).ok_or_else(|| {
-                    AppError::Operation("BIE record count cannot be represented by usize".into())
-                })?;
+                record_count = checked_record_count(record_count)?;
             }
             Some(BieReadItem::Terminator { offset }) => {
                 render_terminator(&mut output, offset, record_count)
                     .map_err(|error| AppError::io("could not write BIE record inventory", error))?;
                 break;
             }
-            None => {
-                return Err(AppError::Operation(
-                    "BIE reader ended without returning its validated terminator".into(),
-                ));
-            }
+            None => return Err(validated_terminator_missing()),
         }
     }
 
     output
         .flush()
         .map_err(|error| AppError::io("could not flush BIE record inventory", error))
+}
+
+fn execute_as5643(arguments: &As5643Args) -> Result<(), AppError> {
+    let mut record_reader = validated_bie_reader(&arguments.path)?;
+    let stdout = io::stdout();
+    let mut output = BufWriter::new(stdout.lock());
+    let mut record_count = 0_usize;
+
+    loop {
+        match record_reader.next_item()? {
+            Some(BieReadItem::Record(record)) => {
+                render_as5643_record(&mut output, record_count, &record).map_err(|error| {
+                    AppError::io("could not write AS5643 record inventory", error)
+                })?;
+                record_count = checked_record_count(record_count)?;
+            }
+            Some(BieReadItem::Terminator { offset }) => {
+                render_terminator(&mut output, offset, record_count).map_err(|error| {
+                    AppError::io("could not write AS5643 record inventory", error)
+                })?;
+                break;
+            }
+            None => return Err(validated_terminator_missing()),
+        }
+    }
+
+    output
+        .flush()
+        .map_err(|error| AppError::io("could not flush AS5643 record inventory", error))
+}
+
+fn validated_bie_reader(path: &Path) -> Result<BieReader<BufReader<File>>, AppError> {
+    let source = File::open(path)
+        .map_err(|error| AppError::io(format!("could not open '{}'", path.display()), error))?;
+    let mut validation_reader = BieReader::new(BufReader::new(source), FileOffset::new(0));
+    validate_records(&mut validation_reader)?;
+
+    let mut source = validation_reader.into_inner().into_inner();
+    source
+        .seek(SeekFrom::Start(0))
+        .map_err(|error| AppError::io("could not rewind validated BIE input", error))?;
+    Ok(BieReader::new(BufReader::new(source), FileOffset::new(0)))
+}
+
+fn checked_record_count(record_count: usize) -> Result<usize, AppError> {
+    record_count.checked_add(1).ok_or_else(|| {
+        AppError::Operation("BIE record count cannot be represented by usize".into())
+    })
+}
+
+fn validated_terminator_missing() -> AppError {
+    AppError::Operation("BIE reader ended without returning its validated terminator".into())
 }
 
 fn validate_records(reader: &mut BieReader<impl Read>) -> Result<(), AppError> {
@@ -512,6 +609,73 @@ fn render_record(output: &mut impl Write, index: usize, record: &BieRecord<'_>) 
         record.status_and_length().unresolved_flags(),
         record.status_and_length().data_length(),
     )
+}
+
+fn render_as5643_record(
+    output: &mut impl Write,
+    index: usize,
+    record: &BieRecord<'_>,
+) -> io::Result<()> {
+    write!(
+        output,
+        "record={index} offset=0x{:016X} data_item_id=0x{:08X} recorder_seconds={} recorder_microseconds={} status_and_length=0x{:08X} unresolved_flags=0x{:08X} data_length={} as5643=",
+        record.file_offset().get(),
+        record.data_item_id().get(),
+        record.recorder_time().seconds(),
+        record.recorder_time().microseconds(),
+        record.status_and_length().raw(),
+        record.status_and_length().unresolved_flags(),
+        record.status_and_length().data_length(),
+    )?;
+
+    match map_bie_record_to_as5643(*record).outcome() {
+        BieAs5643MappingOutcome::AssumedAs5643bV1(message) => {
+            let validation = message.vpc_validation();
+            write!(
+                output,
+                "mapped profile={} assumption_dependent={} message_id=0x{:08X} reserved_security=0x{:08X} node_id=0x{:08X} priority_and_payload_length=0x{:08X} health_status=0x{:08X} heartbeat=0x{:08X} application_length={} stof_transmit_offset={} stof_receive_offset={} stof_datapump_offset={} stored_vpc=0x{:08X} calculated_vpc=",
+                message.profile_id(),
+                message.assumption_dependent(),
+                message.message_id().get(),
+                message.reserved_security(),
+                message.node_id(),
+                message.priority_and_payload_length(),
+                message.health_status(),
+                message.heartbeat(),
+                message.application_data().len(),
+                message.stof_transmit_offset(),
+                message.stof_receive_offset(),
+                message.stof_datapump_offset(),
+                message.stored_vpc(),
+            )?;
+            if let Some(calculated_vpc) = validation.calculated_vpc() {
+                write!(output, "0x{calculated_vpc:08X}")?;
+            } else {
+                output.write_all(b"none")?;
+            }
+            writeln!(
+                output,
+                " vpc={}",
+                vpc_validation_label(validation.outcome())
+            )
+        }
+        BieAs5643MappingOutcome::UnsupportedDataItem => {
+            writeln!(output, "unsupported reason=data_item_id")
+        }
+        BieAs5643MappingOutcome::UnsupportedStoredDataLength { expected, actual } => writeln!(
+            output,
+            "unsupported reason=stored_data_length expected={expected} actual={actual}"
+        ),
+    }
+}
+
+const fn vpc_validation_label(outcome: VpcValidationOutcome) -> &'static str {
+    match outcome {
+        VpcValidationOutcome::Valid => "valid",
+        VpcValidationOutcome::Invalid => "invalid",
+        VpcValidationOutcome::NotPresent => "not_present",
+        VpcValidationOutcome::NotChecked => "not_checked",
+    }
 }
 
 fn render_terminator(
@@ -638,6 +802,28 @@ mod tests {
             .expect_err("records has no offset option");
 
         assert!(error.to_string().contains("unknown records option"));
+    }
+
+    #[test]
+    fn parses_an_as5643_file_path_after_the_option_terminator() {
+        let arguments = parse_as5643_args([os("--"), os("-capture.bie")])
+            .expect("arguments are valid")
+            .expect("help was not requested");
+
+        assert_eq!(
+            arguments,
+            As5643Args {
+                path: PathBuf::from("-capture.bie"),
+            }
+        );
+    }
+
+    #[test]
+    fn rejects_as5643_options() {
+        let error = parse_as5643_args([os("--profile"), os("other"), os("capture.bie")])
+            .expect_err("as5643 profile selection is not implicit or user-defined");
+
+        assert!(error.to_string().contains("unknown as5643 option"));
     }
 
     /// Requirements: L3-OUT-001, L3-OUT-002, L3-OUT-006

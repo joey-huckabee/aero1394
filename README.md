@@ -20,8 +20,10 @@ sentinel and reports truncation, a missing terminator, or trailing bytes.
 The `records` CLI lists those raw BIE fields without assigning protocol
 semantics. The `as5643` library module now decodes the confirmed retained
 116-byte representation under the explicit assumption-dependent profile while
-leaving its 92 application bytes opaque. VPC validation, BIE-to-profile CLI
-integration, and typed payload decoding are the next separate increments.
+leaving its 92 application bytes opaque. A separate BIE adapter maps only data
+item `0x00005D04` with exactly 116 stored bytes, and the `as5643` CLI exposes
+the decoded envelope and VPC finding without changing generic BIE parsing.
+Typed payload registration and decoding are the next separate increments.
 
 The first initial-development release, [`v0.1.0`](https://github.com/joey-huckabee/aero1394/releases/tag/v0.1.0),
 is published with verified Windows and Linux archives and checksums. Further
@@ -71,6 +73,20 @@ length. It does not label the BIE ID as an AS5643 Message ID or decode stored
 data. The command makes two bounded passes: the first validates without
 emitting output, then the second rewinds and renders while retaining at most
 one 65,551-byte BIE record plus fixed-size I/O buffers.
+
+Decode the supported assumption-dependent AS5643 envelope from a complete BIE
+file:
+
+```text
+cargo run --release -- as5643 path/to/capture.bie
+```
+
+The command prints the BIE identity and raw metadata, selected profile and
+assumption marker, reconstructed ASM-header words, Health Status, Heartbeat,
+application length, STOF offsets, stored/calculated VPC, and validation result.
+Unknown data-item IDs and a known ID with another stored-data length are
+reported as `unsupported` while remaining successful inspectable records. This
+human-readable output is not yet a stable machine schema.
 
 Each hex-dump line contains a 16-digit absolute file offset, hexadecimal bytes,
 and an ASCII preview. The default 256-byte limit prevents an accidental

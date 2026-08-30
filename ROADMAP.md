@@ -1,7 +1,7 @@
 # Aero1394 roadmap
 
 - Scope: incomplete and forward-looking work only
-- Last updated: 2026-08-29
+- Last updated: 2026-08-30
 
 ## Roadmap rules
 
@@ -19,9 +19,11 @@ The dependency order, small functional increments, payload evidence request,
 and exit gates are defined in
 [`docs/RELEASE-PLAN-v0.2.0.md`](docs/RELEASE-PLAN-v0.2.0.md).
 
-Raw AS5643 envelope decoding and VPC validation can proceed from the confirmed
-BIE mapping. The complete `msfcs_storesmassdata_b` field definition is required
-before the first typed payload decoder can be called supported.
+Raw AS5643 envelope decoding, VPC validation, explicit BIE mapping, and CLI
+presentation are implemented. The next increment is the deterministic built-in
+payload registry. The `msfcs_storesmassdata_b` field layout is supplied, while
+its source metadata and unresolved Boolean, engineering-unit, and validity
+semantics remain required before its typed decoder can be called supported.
 
 ## Extend the internal BIE path
 

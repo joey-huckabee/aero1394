@@ -34,8 +34,8 @@ file or add `--check` to detect drift without writing.
 | --- | --- | --- | --- |
 | L2-BIE-001 | L3-BIE-001, L3-BIE-002, L3-BIE-003 | `src/bie/mod.rs::accepts_a_nonzero_id_with_zero_length_stored_data`<br>`src/bie/mod.rs::parses_explicit_fields_variable_length_and_unknown_id`<br>`src/bie/mod.rs::parses_variable_length_records_through_the_file_terminator`<br>`src/bie/mod.rs::preserves_stored_data_truncation_details_at_file_level`<br>`src/bie/mod.rs::rejects_an_unrepresentable_record_end_offset`<br>`src/bie/mod.rs::rejects_an_unrepresentable_terminator_end_offset`<br>`src/bie/mod.rs::reports_declared_and_available_body_sizes`<br>`src/bie/mod.rs::streaming_buffer_accepts_the_maximum_encoded_record_only`<br>`src/bie/mod.rs::streams_fragmented_reads_one_complete_record_at_a_time`<br>`tests/bie_fixtures.rs::startup_fixture_preserves_four_consecutive_records` | Implemented |
 | L2-BIE-002 | L3-BIE-004, L3-BIE-005 | `src/bie/mod.rs::accepts_the_sentinel_only_empty_form`<br>`src/bie/mod.rs::parses_variable_length_records_through_the_file_terminator`<br>`src/bie/mod.rs::preserves_stored_data_truncation_details_at_file_level`<br>`src/bie/mod.rs::reports_a_missing_terminator_at_a_record_boundary`<br>`src/bie/mod.rs::reports_a_partial_terminal_word_as_a_truncated_header`<br>`src/bie/mod.rs::reports_a_truncated_header`<br>`src/bie/mod.rs::reports_declared_and_available_body_sizes`<br>`src/bie/mod.rs::reports_trailing_data_after_the_terminator`<br>`src/bie/mod.rs::streaming_trailing_data_count_uses_a_bounded_scratch_buffer`<br>`src/bie/mod.rs::streams_fragmented_reads_one_complete_record_at_a_time`<br>`tests/bie_fixtures.rs::empty_recording_is_one_zero_word`<br>`tests/bie_fixtures.rs::end_fixture_preserves_four_records_and_original_terminator`<br>`tests/cli_records.rs::records_accepts_the_sentinel_only_fixture`<br>`tests/cli_records.rs::records_lists_the_complete_end_fixture`<br>`tests/cli_records.rs::records_reports_a_missing_terminator`<br>`tests/cli_records.rs::records_reports_a_truncated_header`<br>`tests/cli_records.rs::records_reports_trailing_data` | Implemented |
-| L2-BIE-003 | L3-BIE-006, L3-BIE-007, L3-BIE-008 | `ROADMAP.md`<br>`docs/BIE-FORMAT.md`<br>`src/bie/mod.rs::accepts_a_nonzero_id_with_zero_length_stored_data`<br>`src/bie/mod.rs::parses_explicit_fields_variable_length_and_unknown_id`<br>`src/bie/mod.rs::parses_variable_length_records_through_the_file_terminator`<br>`src/bie/mod.rs::rejects_an_unrepresentable_record_end_offset`<br>`src/bie/mod.rs::rejects_an_unrepresentable_terminator_end_offset`<br>`src/bie/mod.rs::streams_fragmented_reads_one_complete_record_at_a_time`<br>`tests/bie_fixtures.rs::startup_fixture_preserves_four_consecutive_records`<br>`tests/fixtures/bie/README.md` | Implemented |
-| L2-BIE-004 | L3-BIE-009 | _(TBD)_ | Draft |
+| L2-BIE-003 | L3-BIE-006, L3-BIE-007, L3-BIE-008 | `ROADMAP.md`<br>`docs/BIE-FORMAT.md`<br>`src/bie/mod.rs::accepts_a_nonzero_id_with_zero_length_stored_data`<br>`src/bie/mod.rs::parses_explicit_fields_variable_length_and_unknown_id`<br>`src/bie/mod.rs::parses_variable_length_records_through_the_file_terminator`<br>`src/bie/mod.rs::rejects_an_unrepresentable_record_end_offset`<br>`src/bie/mod.rs::rejects_an_unrepresentable_terminator_end_offset`<br>`src/bie/mod.rs::streams_fragmented_reads_one_complete_record_at_a_time`<br>`tests/bie_as5643_mapping.rs::maps_the_supported_bie_identity_and_layout_to_the_named_profile`<br>`tests/bie_as5643_mapping.rs::preserves_a_supported_id_with_an_unsupported_stored_length`<br>`tests/bie_as5643_mapping.rs::preserves_an_unknown_data_item_as_an_unsupported_mapping`<br>`tests/bie_fixtures.rs::startup_fixture_preserves_four_consecutive_records`<br>`tests/cli_as5643.rs::as5643_labels_a_wrong_sized_supported_item_without_failing`<br>`tests/cli_as5643.rs::as5643_labels_an_unknown_data_item_without_failing`<br>`tests/fixtures/bie/README.md` | Implemented |
+| L2-BIE-004 | L3-BIE-009 | `docs/BIE-FORMAT.md`<br>`tests/bie_as5643_mapping.rs`<br>`tests/bie_as5643_mapping.rs::maps_the_supported_bie_identity_and_layout_to_the_named_profile`<br>`tests/bie_as5643_mapping.rs::preserves_a_supported_id_with_an_unsupported_stored_length`<br>`tests/bie_as5643_mapping.rs::preserves_an_unknown_data_item_as_an_unsupported_mapping`<br>`tests/cli_as5643.rs`<br>`tests/cli_as5643.rs::as5643_labels_a_wrong_sized_supported_item_without_failing`<br>`tests/cli_as5643.rs::as5643_labels_an_unknown_data_item_without_failing`<br>`tests/cli_as5643.rs::as5643_lists_mapped_envelope_and_vpc_values` | Implemented |
 | L2-BIE-005 | L3-BIE-010 | _(TBD)_ | Draft |
 
 ### L1-TIM: Recorder and payload time domains
@@ -68,8 +68,8 @@ file or add `--check` to detect drift without writing.
 | L2 ID | L3 children | Verification artifacts | Status |
 | --- | --- | --- | --- |
 | L2-PRO-001 | L3-PRO-001 | `src/bie/mod.rs::parses_explicit_fields_variable_length_and_unknown_id` | Implemented |
-| L2-PRO-002 | L3-PRO-002, L3-PRO-003 | `src/as5643/mod.rs::rejects_a_message_id_outside_the_selected_profile`<br>`src/as5643/mod.rs::rejects_short_and_long_retained_representations`<br>`tests/as5643_profile.rs::decodes_raw_profile_fields_from_known_good_bie_records` | Implemented |
-| L2-PRO-003 | L3-PRO-004, L3-PRO-005 | `docs/AS5643.md`<br>`docs/BIE-FORMAT.md`<br>`src/as5643/mod.rs::distinguishes_absent_and_unavailable_vpc_results`<br>`src/as5643/mod.rs::reports_unaligned_protected_data_as_not_checked`<br>`tests/as5643_profile.rs`<br>`tests/as5643_profile.rs::decodes_raw_profile_fields_from_known_good_bie_records`<br>`tests/as5643_profile.rs::reports_a_mutated_protected_word_as_invalid_without_losing_evidence`<br>`tests/as5643_profile.rs::validates_every_startup_fixture_vpc` | Implemented |
+| L2-PRO-002 | L3-PRO-002, L3-PRO-003 | `src/as5643/mod.rs::rejects_a_message_id_outside_the_selected_profile`<br>`src/as5643/mod.rs::rejects_short_and_long_retained_representations`<br>`tests/as5643_profile.rs::decodes_raw_profile_fields_from_known_good_bie_records`<br>`tests/bie_as5643_mapping.rs::maps_the_supported_bie_identity_and_layout_to_the_named_profile`<br>`tests/cli_as5643.rs::as5643_lists_mapped_envelope_and_vpc_values` | Implemented |
+| L2-PRO-003 | L3-PRO-004, L3-PRO-005 | `docs/AS5643.md`<br>`docs/BIE-FORMAT.md`<br>`src/as5643/mod.rs::distinguishes_absent_and_unavailable_vpc_results`<br>`src/as5643/mod.rs::reports_unaligned_protected_data_as_not_checked`<br>`tests/as5643_profile.rs`<br>`tests/as5643_profile.rs::decodes_raw_profile_fields_from_known_good_bie_records`<br>`tests/as5643_profile.rs::reports_a_mutated_protected_word_as_invalid_without_losing_evidence`<br>`tests/as5643_profile.rs::validates_every_startup_fixture_vpc`<br>`tests/bie_as5643_mapping.rs::maps_the_supported_bie_identity_and_layout_to_the_named_profile`<br>`tests/cli_as5643.rs::as5643_lists_mapped_envelope_and_vpc_values` | Implemented |
 
 ### L1-PAY: Built-in application payload decoding
 
@@ -100,7 +100,7 @@ file or add `--check` to detect drift without writing.
 
 | L2 ID | L3 children | Verification artifacts | Status |
 | --- | --- | --- | --- |
-| L2-OUT-001 | L3-OUT-001, L3-OUT-002 | `src/main.rs::renders_raw_bie_record_inventory_values`<br>`tests/as5643_profile.rs::decodes_raw_profile_fields_from_known_good_bie_records`<br>`tests/cli_records.rs::records_lists_the_complete_end_fixture` | Implemented |
+| L2-OUT-001 | L3-OUT-001, L3-OUT-002 | `src/main.rs::renders_raw_bie_record_inventory_values`<br>`tests/as5643_profile.rs::decodes_raw_profile_fields_from_known_good_bie_records`<br>`tests/cli_as5643.rs::as5643_labels_a_wrong_sized_supported_item_without_failing`<br>`tests/cli_as5643.rs::as5643_labels_an_unknown_data_item_without_failing`<br>`tests/cli_as5643.rs::as5643_lists_mapped_envelope_and_vpc_values`<br>`tests/cli_records.rs::records_lists_the_complete_end_fixture` | Implemented |
 | L2-OUT-002 | L3-OUT-003, L3-OUT-004, L3-OUT-005, L3-OUT-006 | `docs/OUTPUTS.md`<br>`docs/adr/0013-separate-canonical-data-from-output-presentation.md`<br>`src/main.rs::renders_raw_bie_record_inventory_values`<br>`tests/cli_records.rs::records_lists_the_complete_end_fixture` | Partially Implemented |
 
 ### L1-TST: Verification evidence and fixtures
@@ -130,17 +130,17 @@ file or add `--check` to detect drift without writing.
 
 | Category | L1 | L2 | L3 | L2 tested | L3 tested | L2 verified | L3 verified |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| BIE | 1 | 5 | 10 | 0 | 8 | 0 | 8 |
+| BIE | 1 | 5 | 10 | 0 | 9 | 0 | 9 |
 | TIM | 1 | 4 | 10 | 0 | 2 | 0 | 2 |
 | PRO | 1 | 3 | 5 | 0 | 5 | 0 | 5 |
 | PAY | 1 | 4 | 12 | 0 | 0 | 0 | 2 |
 | OUT | 1 | 2 | 6 | 0 | 3 | 0 | 3 |
 | TST | 1 | 3 | 6 | 0 | 1 | 0 | 3 |
-| **Total** | **6** | **21** | **49** | **0** | **19** | **0** | **23** |
+| **Total** | **6** | **21** | **49** | **0** | **20** | **0** | **24** |
 
-**Tested by at least one marker**: 19 of 70 (27.1%).
+**Tested by at least one marker**: 20 of 70 (28.6%).
 
-**Verified by a test or named non-test evidence**: 23 of 70 (32.9%).
+**Verified by a test or named non-test evidence**: 24 of 70 (34.3%).
 
 ### Applicability summary
 

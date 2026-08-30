@@ -23,12 +23,15 @@ authoritative record of work accumulated before release.
   valid, invalid, absent, and unchecked results that retain audit evidence.
 - Golden VPC validation across all eight supplied records plus corrupted and
   unavailable-input cases.
+- An explicit BIE-to-AS5643 adapter that requires the supported data-item ID
+  and stored size while preserving unknown and wrong-size records.
+- An `as5643` CLI command that presents raw envelope fields, reconstructed
+  inputs, profile assumptions, stored/calculated VPC, and validation outcomes.
 - A documented 92-byte `msfcs_storesmassdata_b` field map correlated with the
   captured fixture values.
 
 ## Still planned
 
-- explicit BIE-to-profile mapping and CLI presentation;
 - a deterministic built-in payload registry; and
 - complete `msfcs_storesmassdata_b` decoding after source metadata and the
   remaining Boolean and engineering-unit semantics are confirmed.

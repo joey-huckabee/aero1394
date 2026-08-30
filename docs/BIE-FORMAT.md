@@ -246,6 +246,13 @@ region. The AS5643 decoder applies profile
 Heartbeat freshness evaluation, STOF-offset interpretation, and VPC validation
 follow the linked AS5643 definitions; they are not BIE framing rules.
 
+The Rust `bie_as5643` adapter implements that selection without adding protocol
+knowledge to the BIE parser. It requires both data item `0x00005D04` and an
+exact 116-byte stored region. Other IDs return `UnsupportedDataItem`; the known
+ID with another length returns `UnsupportedStoredDataLength` with expected and
+actual sizes. Both outcomes retain the complete parsed record and are not
+classified as corrupt merely because no supported profile matches.
+
 ## Implementation dispositions
 
 | Question | Current parser policy | Follow-up |

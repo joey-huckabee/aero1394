@@ -1,6 +1,6 @@
 # Aero1394 architecture
 
-- Status: BIE framing and assumption-dependent AS5643 envelope/VPC implemented
+- Status: BIE framing, AS5643 envelope/VPC, explicit BIE mapping, and CLI implemented
 - Last updated: 2026-08-30
 
 ## Current vertical slice
@@ -24,6 +24,10 @@ CLI: records path -> validate BieReader pass -> render BieReader pass
 
 Library: MessageId + retained &[u8] -> as5643 profile -> raw envelope
                                                      -> VpcValidation
+
+Library: BieRecord -> bie_as5643 mapping -> mapped envelope or unsupported
+
+CLI: as5643 path -> validate BieReader pass -> map and render BieReader pass
 ```
 
 The `forensic` module is format-neutral. It does not identify a source as BIE,
@@ -60,6 +64,13 @@ continues to borrow the caller's input. Framing reports truncation, missing
 termination, trailing data, and offset overflow without performing validation,
 protocol interpretation, or recovery. `BieReader` composes the same record
 parser with `Read` while bounding memory independently of source size.
+
+The `bie_as5643` adapter depends on both the generic BIE and AS5643 modules. It
+maps only data item `0x00005D04` with exactly 116 stored bytes to profile
+`aero1394-assumed-as5643b-v1`. Every result retains the original `BieRecord`;
+unknown identities and other stored-data sizes are explicit unsupported
+outcomes rather than parser failures. The `as5643` CLI presents this adapter's
+result using the same validate-before-render two-pass behavior as `records`.
 
 Release packaging is a repository adapter implemented in
 `scripts/package-release.py`. It verifies the compiled binary, creates a
@@ -163,17 +174,18 @@ input and assumption marker. It calculates the VPC from explicit reconstructed
 header inputs, preserves the stored and calculated words, and distinguishes
 valid, invalid, absent, and unchecked outcomes.
 
-The next slice maps only the supported BIE identity and retained size to this
-named profile and adds CLI presentation. The typed payload registry and
-application-field semantics remain downstream operations. The definitive
-contracts are in `BIE-FORMAT.md`, `AS5643.md`, and `PAYLOADS.md`; live
-verification status is in `TRACE-MATRIX.md`.
+The separate `bie_as5643` adapter now maps only the supported BIE identity and
+retained size to the named profile, and the CLI presents mapped and unsupported
+outcomes. The next slice is the deterministic typed payload registry;
+application-field semantics remain downstream. The definitive contracts are
+in `BIE-FORMAT.md`, `AS5643.md`, and `PAYLOADS.md`; live verification status is
+in `TRACE-MATRIX.md`.
 
 ## Verification
 
 Unit and integration tests cover forensic bounds, BIE framing/streaming,
 AS5643 profile selection and retained-size errors, golden raw envelope values,
 known-good and corrupted VPC outcomes, argument parsing, and rendering. CLI
-integration tests run the compiled binary against temporary captures. CI
-applies formatting, Clippy-with-warnings-denied, and all tests on Windows and
-Linux.
+integration tests run the compiled binary against temporary mapped, unknown-ID,
+and wrong-size captures. CI applies formatting, Clippy-with-warnings-denied,
+and all tests on Windows and Linux.

@@ -1,7 +1,7 @@
 # Decoded output schemas
 
-- Status: Provisional design; no decoder or stable machine schema implemented
-- Last updated: 2026-08-29
+- Status: Human-readable AS5643 CLI implemented; no stable machine schema
+- Last updated: 2026-08-30
 
 ## Boundary
 
@@ -11,9 +11,22 @@ Parquet, CLI text, and Python objects do not define the parser's internal data
 model. Raw words and validation outcomes remain available when presentation
 adds names, dates, engineering values, or formatting.
 
+## Human-readable AS5643 inventory
+
+`aero1394 as5643 <FILE>` is the implemented human-facing protocol inventory.
+For the supported BIE identity and stored size, each line includes the raw BIE
+metadata, selected assumption-dependent profile, reconstructed header words,
+raw AS5643 envelope fields, application length, stored and calculated VPC, and
+the structured validation outcome. Unsupported IDs and stored sizes remain
+successful inventory lines with explicit reasons.
+
+This text is deliberately not a versioned machine schema. Formatting may
+change as the CLI evolves; scripts should wait for the separately versioned CSV
+or another stable output contract.
+
 The schema below preserves the current design discussion for
-`msfcs_storesmassdata_b`. It is provisional until the complete payload
-definition is supplied and the machine schema is versioned and golden-tested.
+`msfcs_storesmassdata_b`. It is provisional until the remaining payload
+semantics are supplied and the machine schema is versioned and golden-tested.
 
 ## Time presentation
 
