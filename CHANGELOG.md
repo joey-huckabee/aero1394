@@ -9,6 +9,8 @@ process must update the `Unreleased` section in the same commit.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-08-30
+
 ### Added
 
 - Established this changelog as a required part of every development increment.
@@ -105,5 +107,6 @@ process must update the `Unreleased` section in the same commit.
 - Normalized trace-matrix newline comparison so the exact check works on both
   Windows and Linux checkouts.
 
-[Unreleased]: https://github.com/joey-huckabee/aero1394/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/joey-huckabee/aero1394/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/joey-huckabee/aero1394/releases/tag/v0.2.0
 [0.1.0]: https://github.com/joey-huckabee/aero1394/releases/tag/v0.1.0

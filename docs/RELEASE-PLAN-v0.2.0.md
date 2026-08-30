@@ -114,9 +114,11 @@ changing the preserved input.
   without a valid dated `0.2.0` heading.
 - [x] Final-scope release notes and deterministic ZIP/`tar.gz` tooling are
   present for candidate packaging.
-- [ ] Locked Windows and Linux release builds and packaged-binary smoke tests
-  pass in the remote CI matrix.
-- [ ] Retained Windows and Linux candidates are downloaded, their checksums and
-  members are inspected, and the binaries repeat the smoke checks.
+- [x] Locked Windows and Linux release builds and packaged-binary smoke tests
+  passed in push workflow `33334541950` and retained-candidate workflow
+  `33334581096`.
+- [x] Both retained candidates from workflow `33334581096` were downloaded;
+  their checksums matched, each archive contained exactly the expected four
+  members, and the Windows binary repeated every version/help smoke check.
 - [ ] The changelog is moved from `Unreleased` to a dated `0.2.0` heading, and
   that clean CI-passing commit is explicitly tagged and published.
