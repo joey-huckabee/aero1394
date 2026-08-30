@@ -9,7 +9,7 @@ record family and its implementation contract.
 
 ## Project status
 
-**`v0.1.0` published; `v0.2.0` AS5643 envelope development underway.**
+**`v0.1.0` published; `v0.2.0` release-candidate hardening underway.**
 The Rust library and CLI perform bounded, offset-aware hex inspection. Supplied
 simulation excerpts and recorder summary metadata establish a 16-byte
 big-endian header and length-delimited stored data for the observed record
@@ -25,15 +25,19 @@ item `0x00005D04` with exactly 116 stored bytes, and the `as5643` CLI exposes
 the decoded envelope and VPC finding without changing generic BIE parsing. A
 separate deterministic payload registry now recognizes the 92-byte
 `msfcs_storesmassdata_b` layout and preserves unknown or ambiguous application
-bytes. Its raw decoder exposes the unsigned system ticks, four uninterpreted
-Boolean-designated bytes, and twenty unscaled big-endian `f32` fields while
-retaining every original bit. Engineering interpretation remains evidence-gated.
+bytes. Its raw decoder exposes unsigned system ticks, four Boolean-designated
+bytes, and twenty unscaled big-endian `f32` fields while retaining every
+original bit. An additive provisional semantic view applies strict Boolean
+encoding, validity and reserved-byte findings, non-finite-float warnings, and
+nominal 13.6 GHz elapsed-time conversion. Confirmed engineering units,
+coordinate/reference conventions, and timestamp epoch remain evidence-gated
+beyond `v0.2.0`.
 
 The first initial-development release, [`v0.1.0`](https://github.com/joey-huckabee/aero1394/releases/tag/v0.1.0),
 is published with verified Windows and Linux archives and checksums. Further
 protocol and payload semantics remain evidence-gated.
 
-The next scoped increments and evidence gates are in the
+The frozen candidate scope and remaining release gates are in the
 [`v0.2.0` release plan](docs/RELEASE-PLAN-v0.2.0.md). Every development
 increment is recorded in the [changelog](CHANGELOG.md) before it is committed.
 The completed [`v0.1.0` release plan](docs/RELEASE-PLAN.md) remains as release
@@ -91,8 +95,10 @@ application length, STOF offsets, stored/calculated VPC, and validation result.
 For a mapped envelope, it also reports whether the application bytes matched a
 built-in payload definition, including the definition name, Aero1394 layout
 version, exact size, and byte order. The registered Stores Mass payload also
-prints all raw primitive fields. Float values have no assigned units, Boolean
-bytes have no assigned polarity, and system ticks have no assigned epoch.
+prints all raw primitive fields plus provisional Boolean, validity, warning,
+and elapsed-time interpretations. Float values have no confirmed units,
+Boolean polarity remains explicitly provisional, and system ticks have no
+confirmed epoch.
 Unknown data-item IDs and a known ID with another stored-data length are
 reported as `unsupported` while remaining successful inspectable records. This
 human-readable output is not yet a stable machine schema.
@@ -116,7 +122,9 @@ CI runs the corresponding ZIP or `tar.gz` packaging path on Windows and Linux.
 Manual workflow runs and version tags retain the candidates as workflow
 artifacts, but do not publish a GitHub release; `v0.1.0` was published manually
 after artifact inspection. See the
-[`v0.1.0` release notes](docs/RELEASE-NOTES-v0.1.0.md) for the shipped boundary.
+[`v0.2.0` release notes](docs/RELEASE-NOTES-v0.2.0.md) for the candidate scope
+and the [`v0.1.0` release notes](docs/RELEASE-NOTES-v0.1.0.md) for the previous
+shipped boundary.
 
 See [Reverse-engineering BIE captures](docs/REVERSE-ENGINEERING.md) for the
 evidence workflow and [current architecture](docs/ARCHITECTURE.md) for the

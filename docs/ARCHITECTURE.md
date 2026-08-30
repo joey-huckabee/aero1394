@@ -75,9 +75,12 @@ result using the same validate-before-render two-pass behavior as `records`.
 Release packaging is a repository adapter implemented in
 `scripts/package-release.py`. It verifies the compiled binary, creates a
 timestamp-normalized ZIP or `tar.gz` containing the binary, license, readme,
-and release notes, extracts that archive, smoke-tests the packaged binary, and
-writes a sibling SHA-256 file. Normal CI runs both platform packaging paths;
-manual runs and version tags retain artifacts without publishing a release.
+and release notes, verifies exact archive membership, extracts that archive,
+smoke-tests the packaged binary and every CLI help surface, and writes a sibling
+SHA-256 file. Tag builds additionally require a matching Cargo version, final
+release-note title, and dated changelog heading. Normal CI runs both platform
+packaging paths; manual runs and version tags retain artifacts without
+publishing a release.
 
 ## Dependency direction
 
@@ -163,7 +166,7 @@ ADR-0004 are met. Current public types are deliberately small so unresolved BIE
 semantics, including status flag `0x40000000`, do not become accidental API
 guarantees.
 
-## Evidence available for the next slice
+## Implemented protocol and payload slice
 
 The generic BIE parser and bounded reader preserve the confirmed container
 fields and exact stored regions. The BIE-independent `as5643` module now
@@ -182,9 +185,11 @@ and preserves raw input for one-match, no-match, and ambiguous outcomes. The
 first typed payload module now validates all supplied ranges and decodes every
 `msfcs_storesmassdata_b` primitive with checked big-endian reads. Exact float
 bits, Boolean-designated bytes, system ticks, and original application bytes
-remain accessible. The CLI presents those raw fields without assigning units,
-polarity, validity relationships, or an epoch. Engineering semantics remain the
-next evidence-gated slice. The definitive contracts are in
+remain accessible. The CLI presents those raw fields alongside additive,
+explicitly provisional Boolean, validity, warning, and elapsed-time views; it
+does not assign confirmed units, coordinate/reference conventions, or a
+timestamp epoch. Confirmed engineering semantics remain a later evidence-gated
+slice. The definitive contracts are in
 `BIE-FORMAT.md`, `AS5643.md`, and `PAYLOADS.md`; live verification status is in
 `TRACE-MATRIX.md`.
 
@@ -198,4 +203,5 @@ payload size, byte order, populated and sparse field-by-field golden values,
 argument parsing, and rendering. CLI
 integration tests run the compiled binary against temporary mapped, unknown-ID,
 and wrong-size captures. CI applies formatting, Clippy-with-warnings-denied,
-and all tests on Windows and Linux.
+all Rust tests, release-metadata tests, locked release builds, exact-member
+packaging, and packaged-binary smoke tests on Windows and Linux.

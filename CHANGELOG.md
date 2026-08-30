@@ -54,8 +54,13 @@ process must update the `Unreleased` section in the same commit.
 - Added deterministic non-fatal payload warnings for invalid messages,
   unexpected Boolean encodings, nonzero reserved bytes, and NaN/infinite float
   values; warning-bearing payloads continue to expose every decoded field.
-- Added draft `v0.2.0` release notes so normal CI can package the in-development
-  version without presenting it as released.
+- Added final-scope `v0.2.0` release notes for Windows and Linux candidate
+  packages.
+- Added tag-only release metadata gates that reject mismatched versions, draft
+  release notes, invalid release dates, and undated changelog versions.
+- Expanded release-package inspection to verify exact archive membership and
+  safely extract artifacts and smoke-test every CLI help surface, including the
+  `as5643` command.
 
 ### Changed
 
@@ -76,6 +81,9 @@ process must update the `Unreleased` section in the same commit.
   `v0.2.0` protocol-envelope development.
 - Advanced Cargo package metadata to `0.2.0` and updated the architecture and
   AS5643 implementation status for the raw-envelope increment.
+- Froze the `v0.2.0` functional scope, advanced its release-hardening increment,
+  and deferred confirmed Stores Mass engineering semantics until the required
+  evidence is available.
 
 ## [0.1.0] - 2026-08-29
 

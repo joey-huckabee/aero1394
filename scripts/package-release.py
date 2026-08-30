@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import date
 import gzip
 import hashlib
 import io
@@ -28,6 +29,37 @@ def package_version() -> str:
     return str(data["package"]["version"])
 
 
+def verify_release_metadata(version: str) -> None:
+    changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+    heading = re.search(
+        rf"^## \[{re.escape(version)}\] - (?P<date>\d{{4}}-\d{{2}}-\d{{2}})$",
+        changelog,
+        re.MULTILINE,
+    )
+    if heading is None:
+        raise RuntimeError(
+            f"CHANGELOG.md must contain a dated [{version}] heading before tagging"
+        )
+    try:
+        date.fromisoformat(heading.group("date"))
+    except ValueError as error:
+        raise RuntimeError(
+            f"CHANGELOG.md has an invalid release date for [{version}]"
+        ) from error
+
+    release_notes = ROOT / "docs" / f"RELEASE-NOTES-v{version}.md"
+    notes = release_notes.read_text(encoding="utf-8")
+    expected_title = f"# Aero1394 v{version} release notes"
+    if notes.splitlines()[:1] != [expected_title]:
+        raise RuntimeError(
+            f"{release_notes.name} must start with {expected_title!r} before tagging"
+        )
+    if "Status: Unreleased" in notes:
+        raise RuntimeError(
+            f"{release_notes.name} must not be marked unreleased before tagging"
+        )
+
+
 def verify_tag(version: str) -> None:
     git_ref = os.environ.get("GITHUB_REF", "")
     if git_ref.startswith("refs/tags/"):
@@ -37,6 +69,7 @@ def verify_tag(version: str) -> None:
             raise RuntimeError(
                 f"release tag {actual!r} does not match Cargo version tag {expected!r}"
             )
+        verify_release_metadata(version)
 
 
 def smoke_test(binary: Path, version: str) -> None:
@@ -47,29 +80,41 @@ def smoke_test(binary: Path, version: str) -> None:
         text=True,
     )
     expected_version = f"aero1394 {version}\n"
-    if version_result.returncode != 0 or version_result.stdout != expected_version:
+    if (
+        version_result.returncode != 0
+        or version_result.stdout != expected_version
+        or version_result.stderr
+    ):
         raise RuntimeError(
             f"version smoke test failed for {binary}: "
             f"exit={version_result.returncode}, stdout={version_result.stdout!r}, "
             f"stderr={version_result.stderr!r}"
         )
 
-    help_result = subprocess.run(
-        [str(binary), "records", "--help"],
-        check=False,
-        capture_output=True,
-        text=True,
+    help_checks = (
+        (["--help"], "aero1394 <COMMAND>"),
+        (["hexdump", "--help"], "aero1394 hexdump <FILE> [OPTIONS]"),
+        (["records", "--help"], "aero1394 records <FILE>"),
+        (["as5643", "--help"], "aero1394 as5643 <FILE>"),
     )
-    if (
-        help_result.returncode != 0
-        or "aero1394 records <FILE>" not in help_result.stdout
-        or help_result.stderr
-    ):
-        raise RuntimeError(
-            f"records-help smoke test failed for {binary}: "
-            f"exit={help_result.returncode}, stdout={help_result.stdout!r}, "
-            f"stderr={help_result.stderr!r}"
+    for arguments, expected_usage in help_checks:
+        help_result = subprocess.run(
+            [str(binary), *arguments],
+            check=False,
+            capture_output=True,
+            text=True,
         )
+        if (
+            help_result.returncode != 0
+            or expected_usage not in help_result.stdout
+            or help_result.stderr
+        ):
+            command = " ".join(arguments)
+            raise RuntimeError(
+                f"{command} smoke test failed for {binary}: "
+                f"exit={help_result.returncode}, stdout={help_result.stdout!r}, "
+                f"stderr={help_result.stderr!r}"
+            )
 
 
 def package_members(binary: Path, version: str) -> list[tuple[str, bytes, int]]:
@@ -141,15 +186,27 @@ def smoke_test_archive(
     top_level: str,
     binary_name: str,
     version: str,
+    member_names: list[str],
 ) -> None:
     with tempfile.TemporaryDirectory(prefix="aero1394-package-") as directory:
         extraction_root = Path(directory)
+        expected_paths = [f"{top_level}/{name}" for name in member_names]
         if archive_format == "zip":
             with zipfile.ZipFile(archive) as package:
+                if package.namelist() != expected_paths:
+                    raise RuntimeError(
+                        f"ZIP member mismatch: expected {expected_paths!r}, "
+                        f"found {package.namelist()!r}"
+                    )
                 package.extractall(extraction_root)
         else:
             with tarfile.open(archive, mode="r:gz") as package:
-                package.extractall(extraction_root)
+                if package.getnames() != expected_paths:
+                    raise RuntimeError(
+                        f"tar member mismatch: expected {expected_paths!r}, "
+                        f"found {package.getnames()!r}"
+                    )
+                package.extractall(extraction_root, filter="data")
         smoke_test(extraction_root / top_level / binary_name, version)
 
 
@@ -204,7 +261,14 @@ def main() -> int:
     else:
         write_tar_gz(archive, base_name, members)
 
-    smoke_test_archive(archive, args.archive_format, base_name, binary.name, version)
+    smoke_test_archive(
+        archive,
+        args.archive_format,
+        base_name,
+        binary.name,
+        version,
+        [name for name, _, _ in members],
+    )
     digest = hashlib.sha256(archive.read_bytes()).hexdigest()
     checksum = archive.with_name(f"{archive.name}.sha256")
     checksum.write_bytes(f"{digest}  {archive.name}\n".encode("ascii"))

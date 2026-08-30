@@ -21,10 +21,12 @@ and exit gates are defined in
 
 Raw AS5643 envelope decoding, VPC validation, explicit BIE mapping, CLI
 presentation, the deterministic built-in payload registry, and raw typed
-decoding for every `msfcs_storesmassdata_b` field are implemented. The next
-payload increment is engineering interpretation. Source metadata and unresolved
-Boolean, engineering-unit, coordinate/reference, timestamp-epoch, and validity
-semantics remain required before that interpretation can be called supported.
+decoding plus provisional semantics for every `msfcs_storesmassdata_b` field
+are implemented. The functional scope is frozen and release hardening is in
+progress. Confirmed engineering interpretation is deferred beyond `v0.2.0`;
+source metadata and unresolved engineering-unit, coordinate/reference,
+timestamp-epoch, and field-meaning evidence remain required before that
+interpretation can be called supported.
 
 ## Extend the internal BIE path
 

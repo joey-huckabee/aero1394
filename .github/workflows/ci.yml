@@ -28,6 +28,8 @@ jobs:
         run: rustup show active-toolchain
       - name: Check requirements trace matrix
         run: python scripts/build-trace-matrix.py --check
+      - name: Test release metadata gates
+        run: python -m unittest scripts/test_package_release.py
       - name: Check formatting
         run: cargo fmt --all --check
       - name: Lint

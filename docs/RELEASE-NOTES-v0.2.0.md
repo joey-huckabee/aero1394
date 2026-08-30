@@ -1,13 +1,13 @@
-# Aero1394 v0.2.0 release notes (draft)
+# Aero1394 v0.2.0 release notes
 
-- Status: Unreleased
 - Release series: Initial development (`0.x`)
 - Target tag: `v0.2.0`
+- Supported artifact platforms: Windows x86-64 and Linux x86-64
 
-This file is packaged by normal CI for smoke testing. `CHANGELOG.md` is the
-authoritative record of work accumulated before release.
+These notes define the frozen `v0.2.0` candidate scope. `CHANGELOG.md` remains
+the authoritative record of work accumulated before release.
 
-## Included so far
+## Highlights
 
 - A BIE-independent raw decoder for the retained 116-byte representation of
   provisional profile `aero1394-assumed-as5643b-v1`.
@@ -49,19 +49,46 @@ authoritative record of work accumulated before release.
   CLI exit codes `0` for clean success, `1` for errors, and `2` for successful
   decoding with warnings.
 
-## Still planned
+## Deliberate exclusions
 
-- confirmed engineering interpretation of `msfcs_storesmassdata_b` after the
-  remaining unit, coordinate/reference, acronym, group-meaning, and epoch
-  semantics are supplied.
+- confirmed units, coordinate/reference conventions, acronym expansions,
+  group meanings, and timestamp epoch for `msfcs_storesmassdata_b`;
+- IEEE-1394 wire headers, link/PHY event families, and IEEE CRC validation;
+- automatic profile detection from byte patterns;
+- Health Status bit names, Heartbeat loss claims, or STOF schedule-compliance
+  claims without supporting evidence;
+- stable CSV, Parquet, or Python APIs; and
+- crates.io publication.
 
 ## Evidence boundary
 
-The current decoder applies explicit reconstruction assumptions documented in
-`docs/AS5643.md`. It does not decode IEEE-1394 wire framing, assign Health
-Status bit meanings, convert Heartbeat deltas into lost-message counts, judge
-STOF schedule compliance, or assign engineering meaning to decoded application
+The decoder applies explicit reconstruction assumptions documented in
+`docs/AS5643.md`. Raw Stores Mass primitives remain available alongside strict
+provisional Boolean, validity, warning, and elapsed-time interpretations. The
+release does not decode IEEE-1394 wire framing, assign Health Status bit
+meanings, convert Heartbeat deltas into lost-message counts, judge STOF
+schedule compliance, or claim confirmed engineering meaning for application
 primitives.
 
-This draft is not a compatibility or publication promise. It will be finalized
-from `CHANGELOG.md` only after every `v0.2.0` release gate passes.
+## Usage
+
+Decode the supported AS5643 envelope and built-in payload from a complete BIE
+file:
+
+```text
+aero1394 as5643 capture.bie
+```
+
+List raw BIE records without protocol interpretation:
+
+```text
+aero1394 records capture.bie
+```
+
+Use `aero1394 <COMMAND> --help` for command details.
+
+## Compatibility
+
+This is a pre-`1.0.0` initial-development release. Rust APIs and human-oriented
+CLI formatting may evolve between minor versions. Future changes must remain
+evidence-backed and must not silently reinterpret preserved raw values.

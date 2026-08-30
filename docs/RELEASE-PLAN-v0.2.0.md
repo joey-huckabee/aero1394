@@ -42,8 +42,8 @@ in this release.
 | 4. Payload registry | Select payload definitions deterministically and distinguish one match, no match, and ambiguity. | Registry tests covering all three outcomes and raw unknown preservation. | Complete |
 | 5a. First payload raw fields | Decode all 92 bytes of `msfcs_storesmassdata_b` with supplied names, primitive types, exact ranges, and preserved raw values. | Sanitized populated/sparse golden values, exact-length and byte-order tests, definition validation, and updated traceability. | Complete |
 | 5b. Provisional payload semantics | Add strict Boolean interpretation, non-fatal findings, message validity, reserved-byte policy, direct IEEE-754 values, and nominal elapsed seconds without replacing raw values. | Warning-bearing tests, populated/sparse fixtures, explicit uncertainty labels, and CLI exit-code checks. | Complete |
-| 5c. Confirmed engineering semantics | Add confirmed units, coordinate/reference conventions, acronym/group meanings, and timestamp epoch without replacing raw values. | Authorized source metadata and independent expected engineering values. | Evidence inputs pending |
-| 6. Release hardening | Package and inspect `v0.2.0` on Windows and Linux. | Exact CI gates, release notes, checksums, packaged-binary smoke tests, tag-run inspection, and changelog finalization. | Planned |
+| 5c. Confirmed engineering semantics | Add confirmed units, coordinate/reference conventions, acronym/group meanings, and timestamp epoch without replacing raw values. | Authorized source metadata and independent expected engineering values. | Deferred beyond `v0.2.0`; evidence inputs pending |
+| 6. Release hardening | Package and inspect `v0.2.0` on Windows and Linux. | Exact CI gates, release notes, checksums, packaged-binary smoke tests, tag-run inspection, and changelog finalization. | In progress |
 
 Each increment must be independently functional, update `CHANGELOG.md`, and
 receive its own reviewable commit.
@@ -75,6 +75,8 @@ provenance and handling constraints recorded.
 - automatic profile detection from byte patterns;
 - guessed Health Status bit names or Heartbeat sequence-gap semantics;
 - STOF schedule-compliance claims without a verified frame-time anchor;
+- confirmed Stores Mass engineering interpretation without the required source
+  evidence;
 - runtime YAML payload definitions;
 - stable CSV, Parquet, or Python APIs; and
 - crates.io publication.
@@ -92,3 +94,29 @@ provenance and handling constraints recorded.
   dated `0.2.0` heading before tagging.
 - Formatting, strict Clippy, all tests, the trace check, locked release builds,
   packaging, and packaged-binary smoke tests pass on Windows and Linux.
+
+Confirmed engineering semantics are a post-`v0.2.0` evidence-gated increment,
+not a release gate. The release retains the raw primitives and labels every
+provisional interpretation so later evidence can refine semantics without
+changing the preserved input.
+
+## Current hardening evidence
+
+- [x] The package version and pinned Rust toolchain are `0.2.0` and `1.98.0`.
+- [x] The local Windows trace check, formatting check, strict Clippy run, and
+  complete Rust test suite pass.
+- [x] A locked local Windows release build passes. Repeated ZIP and `tar.gz`
+  construction produced byte-identical SHA-256 digests, and both extracted
+  binaries passed the expanded smoke checks.
+- [x] Release packaging checks the binary version, every CLI help surface,
+  exact archive membership, extracted binary behavior, and SHA-256 output.
+- [x] Tag builds reject a version mismatch, draft release notes, or a changelog
+  without a valid dated `0.2.0` heading.
+- [x] Final-scope release notes and deterministic ZIP/`tar.gz` tooling are
+  present for candidate packaging.
+- [ ] Locked Windows and Linux release builds and packaged-binary smoke tests
+  pass in the remote CI matrix.
+- [ ] Retained Windows and Linux candidates are downloaded, their checksums and
+  members are inspected, and the binaries repeat the smoke checks.
+- [ ] The changelog is moved from `Unreleased` to a dated `0.2.0` heading, and
+  that clean CI-passing commit is explicitly tagged and published.
