@@ -9,7 +9,7 @@ record family and its implementation contract.
 
 ## Project status
 
-**Stage 1 forensic inspection and Stage 2 BIE framing implemented.**
+**`v0.1.0` published; `v0.2.0` AS5643 envelope development underway.**
 The Rust library and CLI perform bounded, offset-aware hex inspection. Supplied
 simulation excerpts and recorder summary metadata establish a 16-byte
 big-endian header and length-delimited stored data for the observed record
@@ -24,8 +24,11 @@ The first initial-development release, [`v0.1.0`](https://github.com/joey-huckab
 is published with verified Windows and Linux archives and checksums. Protocol
 decoding remains evidence-gated future work.
 
-The scoped gates and incremental path for the first pre-`1.0.0` release are in
-the [`v0.1.0` release plan](docs/RELEASE-PLAN.md).
+The next scoped increments and evidence gates are in the
+[`v0.2.0` release plan](docs/RELEASE-PLAN-v0.2.0.md). Every development
+increment is recorded in the [changelog](CHANGELOG.md) before it is committed.
+The completed [`v0.1.0` release plan](docs/RELEASE-PLAN.md) remains as release
+evidence.
 
 See the [internal BIE format contract](docs/BIE-FORMAT.md) for the supported
 grammar, explicit field status, and unresolved status flag. Capture provenance

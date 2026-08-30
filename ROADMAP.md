@@ -13,10 +13,17 @@ Candidate items are not compatibility promises. Each item must have authorized
 sample data, a defined ownership boundary, and testable acceptance criteria
 before implementation begins.
 
-## Complete the internal BIE path
+## Deliver the `v0.2.0` AS5643 and payload path
 
-The bounded scope and exit gates for the first implementation release are
-defined in [`docs/RELEASE-PLAN.md`](docs/RELEASE-PLAN.md).
+The dependency order, small functional increments, payload evidence request,
+and exit gates are defined in
+[`docs/RELEASE-PLAN-v0.2.0.md`](docs/RELEASE-PLAN-v0.2.0.md).
+
+Raw AS5643 envelope decoding and VPC validation can proceed from the confirmed
+BIE mapping. The complete `msfcs_storesmassdata_b` field definition is required
+before the first typed payload decoder can be called supported.
+
+## Extend the internal BIE path
 
 ### Resolve BIE status flag `0x40000000`
 
